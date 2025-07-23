@@ -7,7 +7,6 @@
             "THOTH.geometryhelpers.js",
             "THOTH.utils.js",
             "THOTH.toolbox.js",
-            "THOTH.ui.js",
             "THOTH.fe.js",
             "THOTH.scene.js",
             "THOTH.mat.js",

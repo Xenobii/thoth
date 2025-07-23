@@ -8,7 +8,6 @@ author: steliosalvanos@gmail.com
 
 let THOTH = new ATON.Flare("thoth");
 
-THOTH.UI      = UI;
 THOTH.FE      = FE;
 THOTH.Mat     = Mat;
 THOTH.Toolbox = Toolbox;
@@ -20,78 +19,90 @@ Flare setup
 ===========================================================*/
 
 THOTH.setup = async () => {
-    THOTH._bLeftMouseDown = false;
-    THOTH._bLoading = true;
+    THOTH._bLeftMouseDown   = false;
+
+    THOTH._bLoading   = true;
+    THOTH._bAtonReady = false;
+
+    ATON.on("AllNodeRequestsCompleted", () => {
+        THOTH._bAtonReady = true;
+    });
 
     // ATON Overhead
-    THOTH.ATONISREAL = true;
-    if (THOTH.ATONISREAL) THOTH.ATON2THOTH();
-    else THOTH.bridge();
-
+    await THOTH._parseAtonElements();
+    
     // Init Scene
-    await THOTH.Scene.init();
-
-    THOTH.initHistory();
     THOTH.Mat.init();
+    THOTH.Scene.init();
+    THOTH.Toolbox.init();
     THOTH.FE.init();
-    await THOTH.Toolbox.init();
 
     // Annotation list
     THOTH.annotations = [];
 
     THOTH.sid = THOTH.Scene.sid;
-    await THOTH.importAnnotations(THOTH.sid);
+    THOTH.importAnnotations(THOTH.sid);
     THOTH.updateVisibility();
-}
+};
 
 THOTH.update = () => {
-    if (THOTH.ATONISREAL) {
-        THOTH.Scene._queryData = ATON._queryDataScene;
-    }
-    else {
-        THOTH.Scene._handleQuery();
-    }
-}
+    THOTH.Scene._queryData = ATON._queryDataScene;
+};
 
 /* 
 Ralize
 ===========================================================*/
 
-THOTH.bridge = () => {
-    // Placeholder function to move modules from ATON to THOTH
-    THOTH._camera = ATON.Nav._camera;
-    
-    THOTH._mSelectorSphere = ATON.SUI._mSelectorSphere;
-    
-    THOTH._bRealized = ATON.FE._bRealized;
-};
-
 // Remove THOTH overhead when used with ATON 
-THOTH.ATON2THOTH = () => {
+THOTH._parseAtonElements = async () => {
+    while (!THOTH._bAtonReady) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     THOTH.log("Transfering functionalities from ATON");
 
-    THOTH.Scene._renderer = ATON._renderer;
-    THOTH.Scene._rcScene  = ATON._rcScene;
+    // ATON
+    THOTH._scene = ATON._mainRoot;
+
+    const getMainMesh = () => {
+        let mesh = null;
+        THOTH._scene.traverse(obj => {
+            if (obj.isMesh && !mesh) mesh = obj;
+        });
+        return mesh;
+    };
+    THOTH.Scene.mainMesh = getMainMesh();
+    
+    THOTH.Scene._queryData = ATON._queryDataScene;
+    THOTH.Scene._renderer  = ATON._renderer;
+    THOTH.Scene._rcScene   = ATON._rcScene;
+
+    // Scene
+    THOTH.MODE_ADD = 0;
+    THOTH.MODE_DEL = 1;
+
+    THOTH.patch    = ATON.SceneHub.patch;
+    THOTH.load     = ATON.SceneHub.load;
+    THOTH.currData = ATON.SceneHub.currData;
+
+    // EventHub
+    THOTH.on   = ATON.on;
+    THOTH.fire = ATON.fire;
+    
+    // Nav
     THOTH._camera   = ATON.Nav._camera;
 
-    THOTH.Scene._queryData = ATON._queryDataScene;
-    
+    // Photon
+    THOTH.photonFire = ATON.Photon.fire;
+
+    // Utils
     THOTH._mSelectorSphere = ATON.SUI._mSelectorSphere;
     
-    THOTH._bRealized = ATON.FE._bRealized;
 };
 
 /* 
 Inits
 ===========================================================*/
-
-THOTH.initHistory = () => {
-    THOTH.undoStack = [];
-    THOTH.redoStack = [];
-
-    // TODO Add step limit logic
-    THOTH.maxSteps = 10;
-};
 
 /* 
 Utils
@@ -101,58 +112,9 @@ THOTH.getSelectorRadius = () => {
     return ATON.SUI._selectorRad;
 };
 
-THOTH.setSelectorRadius = (r) => {
-    ATON.SUI._selectorRad = r;
-    ATON.SUI.mainSelector.scale.set(r,r,r);
-};
-
-THOTH.setSelectorColor = (color, opacity) => {
-    let matSel = ATON.MatHub.materials.selector;
-
-    matSel.uniforms.tint.value = color;
-    if (opacity !== undefined) matSel.uniforms.opacity.value = opacity;
-};
-
 /* 
 History
 ===========================================================*/
-
-THOTH.recordState = () => {
-    // If last selection is the same return
-    let lastSelection = THOTH.undoStack[THOTH.undoStack.length -1];
-
-    if (lastSelection === undefined) lastSelection = []; 
-
-    if (THOTH.Utils.setsAreEqual(lastSelection, THOTH.currAnnotation.faceIndices)) {
-        return;
-    }
-
-    THOTH.undoStack.push(new Set(THOTH.currAnnotation.faceIndices));
-    THOTH.redoStack = [];
-};
-
-THOTH.undo = () => {
-    if (THOTH.undoStack.length === 0) {
-        return;
-    }
-    // Save current state to redo stack first
-    THOTH.redoStack.push(new Set(THOTH.currAnnotation.faceIndices));
-
-    // Restore previous state
-    THOTH.currAnnotation.faceIndices = THOTH.undoStack.pop();
-    THOTH.Toolbox.highlightVisibleSelections();
-};
-
-THOTH.redo = () => {
-    if (THOTH.redoStack.length === 0) return;
-
-    // Save current state to undo stack first
-    THOTH.undoStack.push(new Set(THOTH.currAnnotation.faceIndices));
-
-    // Restore next state
-    THOTH.currAnnotation.faceIndices = THOTH.redoStack.pop();
-    THOTH.Toolbox.highlightVisibleSelections();
-};
 
 /* 
 Annotation Management
@@ -266,10 +228,11 @@ THOTH.exportAnnotations = () => {
     THOTH.log("Exporting annotations...");
 
     let A = THOTH.annotations2Object(THOTH.annotations);
-
+    
+    // Just remove all annotation objects and ADD them again with changes
     
     // Patch changes
-    THOTH.Scene.patchScene(A, ATON.SceneHub.MODE_ADD, () => {
+    THOTH.patch(A, ATON.SceneHub.MODE_ADD, () => {
         THOTH.log("Success!");
     });
 };
@@ -323,6 +286,6 @@ THOTH.parseJSON = (data) => {
     });
 };
 
-THOTH.parseDescription = (annotationParams) => {
-    
-}
+
+// TODO: Fix toolbox
+// TODO: Swap annotations with a Map()

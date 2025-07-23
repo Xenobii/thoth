@@ -11,11 +11,7 @@ let Toolbox = {};
 Inits
 ===========================================================*/
 
-Toolbox.init = async () => {
-    while (!Scene._queryData?.o) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
+Toolbox.init = () => {
     // Inits
     Toolbox.initColors();
     Toolbox.initLasso();

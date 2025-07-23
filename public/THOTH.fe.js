@@ -23,11 +23,7 @@ FE._tool     = undefined;
 Init
 ===========================================================*/
 
-FE.init = async () => {
-    while (!THOTH._bRealized) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
+FE.init = () => {
     FE._tool = FE.TOOL_NONE;
     FE.currAnnotationParams = undefined;
     FE.annotationButtons = [];
