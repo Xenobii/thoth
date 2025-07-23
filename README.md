@@ -16,3 +16,4 @@ Designed as part of the [TEXTaiLES](https://textailes-eccch.eu/) program.
 # TODO List
 
 - [ ] Make this work for now
+- [ ] Debug collaborative

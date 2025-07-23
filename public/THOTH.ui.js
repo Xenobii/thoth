@@ -33,7 +33,6 @@ UI.setupContainers = () => {
     UI.createOptionsContainer();
 };
 
-
 UI.addFeatures = () => {
     UI.addTools();
     UI.addLayerButtons();
@@ -218,7 +217,6 @@ UI.createToolboxContainer = () => {
     document.body.appendChild(UI.toolboxContainer);
 };
 
-
 UI.createLayerContainer = () => {
     UI.layerContainer = document.createElement("div");
     UI.layerContainer.id = "idLayerContainer";
@@ -226,14 +224,12 @@ UI.createLayerContainer = () => {
     document.body.appendChild(UI.layerContainer);
 };
 
-
 UI.createLayerBtnContainer = () => {
     UI.layerBtnContainer = document.createElement("div");
     UI.layerBtnContainer.id = "idLayerBtnContainer";
     UI.layerBtnContainer.classList.add("layerBtnContainer", "sidePanelContainer");
     document.body.appendChild(UI.layerBtnContainer);
 };
-
 
 UI.createOptionsContainer = () => {
     UI.optionsContainer = document.createElement("div");
@@ -247,19 +243,24 @@ UI.createOptionsContainer = () => {
 
 UI.addLayerButtons = () => {
     UI.uiAddButton("idLayerBtnContainer", "nav", () => {
-        console.log("Add layer");
+        THOTH.createNewLayer();
     }, "Add layer");
     UI.uiAddButton("idLayerBtnContainer", "nav", () => {
-        console.log("Remove Layer");
+        THOTH.deleteLayer();
     }, "Remove Layer");
 };
 
-
 UI.addTools = () => {
     UI.uiAddButton("idToolboxContainer", "nav", () => {
-        console.log("Totally a brush");
+        THOTH.toolbox.activateBrush();
     }, "Totally a brush");
     UI.uiAddButton("idToolboxContainer", "nav", () => {
-        console.log("Totally a lasso");
+        THOTH.toolbox.activateLasso();
     }, "Totally a lasso");
+    // Add additional buttons for testing 
+    UI.uiAddButton("idToolboxContainer", "nav", () => {
+        THOTH.Scene.broadcastLayerChange();
+    })
+    // Temp: add photon button here
+    ATON.FE.uiAddButtonPhoton("idToolboxContainer")
 };
