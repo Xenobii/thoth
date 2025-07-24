@@ -14,9 +14,7 @@ THOTH.Toolbox = Toolbox;
 THOTH.Utils   = Utils;
 THOTH.Scene   = Scene;
 
-/* 
-Flare setup
-===========================================================*/
+// Flare setup
 
 THOTH.setup = async () => {
     THOTH._bLeftMouseDown   = false;
@@ -31,30 +29,33 @@ THOTH.setup = async () => {
     // ATON Overhead
     await THOTH._parseAtonElements();
     
-    // Init Scene
+    // Mat
     THOTH.Mat.init();
+    
+    // Scene
     THOTH.Scene.init();
+    THOTH.initRC();
+
+    // Toolbox
     THOTH.Toolbox.init();
+
+    // Front End
     THOTH.FE.init();
-
-    // Annotation list
+    
+    // Annotations
     THOTH.annotations = [];
-
-    THOTH.sid = THOTH.Scene.sid;
-    THOTH.importAnnotations(THOTH.sid);
+    THOTH.Scene.importAnnotations(THOTH.Scene.sid);
     THOTH.updateVisibility();
 };
 
 THOTH.update = () => {
-    THOTH.Scene._queryData = ATON._queryDataScene;
+    THOTH._queryData = ATON._queryDataScene;
 };
 
-/* 
-Ralize
-===========================================================*/
+// Inits
 
-// Remove THOTH overhead when used with ATON 
 THOTH._parseAtonElements = async () => {
+    // Remove ATON overhead -> transfer functionalities and variables
     while (!THOTH._bAtonReady) {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -71,15 +72,17 @@ THOTH._parseAtonElements = async () => {
         });
         return mesh;
     };
-    THOTH.Scene.mainMesh = getMainMesh();
+    THOTH.mainMesh = getMainMesh();
     
-    THOTH.Scene._queryData = ATON._queryDataScene;
-    THOTH.Scene._renderer  = ATON._renderer;
-    THOTH.Scene._rcScene   = ATON._rcScene;
+    THOTH._queryData = ATON._queryDataScene;
+    THOTH._renderer  = ATON._renderer;
+    THOTH._rcScene   = ATON._rcScene;
 
     // Scene
     THOTH.MODE_ADD = 0;
     THOTH.MODE_DEL = 1;
+    
+    THOTH.RCLayer  = ATON.NTYPES.SCENE
 
     THOTH.patch    = ATON.SceneHub.patch;
     THOTH.load     = ATON.SceneHub.load;
@@ -100,9 +103,28 @@ THOTH._parseAtonElements = async () => {
     
 };
 
-/* 
-Inits
-===========================================================*/
+THOTH.initRC = () => {
+    // Raycaster
+    THOTH._raycaster = new THREE.Raycaster();
+    THOTH._raycaster.layers.set(THOTH.RCLayer);
+    THOTH._raycaster.firstHitOnly = true;
+
+    // Color propertied for face selection
+    THOTH.mainMesh.material.vertexColors = true;
+    THOTH.mainMesh.material.needsUpdate  = true;
+
+    // Initialize vertex colors if they don't exist
+    if (!THOTH.mainMesh.geometry.attributes.color) {
+        THOTH.log("Initializing color");
+        
+        const colorArray = new Float32Array(THOTH.mainMesh.geometry.attributes.position.count * 3);
+        colorArray.fill(THOTH.Mat.colorsThree.white); // Default white color
+
+        const colorAttr = new THREE.BufferAttribute(colorArray, 3);
+        
+        THOTH.mainMesh.geometry.setAttribute('color', colorAttr);
+    }
+};
 
 /* 
 Utils
@@ -224,68 +246,7 @@ THOTH.updateVisibility = () => {
     THOTH.Toolbox.highlightVisibleSelections(THOTH.annotations);
 };
 
-THOTH.exportAnnotations = () => {
-    THOTH.log("Exporting annotations...");
 
-    let A = THOTH.annotations2Object(THOTH.annotations);
-    
-    // Just remove all annotation objects and ADD them again with changes
-    
-    // Patch changes
-    THOTH.patch(A, ATON.SceneHub.MODE_ADD, () => {
-        THOTH.log("Success!");
-    });
-};
-
-THOTH.annotations2Object = (annotationArray) => {
-    const annotationObject = {};
-    annotationObject.annotations = {};
-
-    for (let i=0; i<annotationArray.length; i++) {
-        const name = annotationArray[i].name;
-        const faceIndices = Array.from(annotationArray[i].faceIndices);
-
-        // Add to annotation object
-        annotationObject.annotations[name] = annotationArray[i];
-        annotationObject.annotations[name].faceIndices = faceIndices;
-    };
-    return annotationObject;
-};
-
-THOTH.importAnnotations = async (sid, onSuccess) => {
-    if (sid === undefined) return;
-
-    THOTH.log("Importing annotations from scene: "+sid);
-    
-    const reqpath = ATON.PATH_RESTAPI2+"scenes/"+sid;
-
-    return new Promise((resolve, reject) => {
-        THOTH.Utils.getJSON(reqpath, (data) => {
-            // Parse JSON and apply to scene
-            THOTH.parseJSON(data);
-    
-            if (onSuccess) onSuccess();
-            resolve();
-        });
-    });
-};
-
-THOTH.parseJSON = (data) => {
-    if (data.annotations === undefined) return;
-
-    // Convert annotations object to array and parse
-    THOTH.annotations = Object.values(data.annotations);
-
-    // Iterate through the array
-    Object.keys(THOTH.annotations).forEach(i => {
-        // Convert faceIndices to Sets
-        THOTH.annotations[i].faceIndices = new Set(THOTH.annotations[i].faceIndices);
-
-        // Create annotation button for each
-        THOTH.FE.createNewAnnotationUI(THOTH.annotations[i]);
-    });
-};
-
-
+// TODO: Do proper finction assignment
 // TODO: Fix toolbox
 // TODO: Swap annotations with a Map()

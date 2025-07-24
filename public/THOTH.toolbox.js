@@ -35,7 +35,7 @@ Toolbox.initColors = () => {
     Toolbox.lassoFillColor = THOTH.Mat.colorsThree.green; 
 };
 
-Toolbox.initLassoCanvas = () => {
+Toolbox.initLassoCanvas = () => { 
     // Create separate canvas for lasso drawing
     const canvas = document.createElement('canvas');
     canvas.id = 'lassoCanvas';
@@ -51,8 +51,8 @@ Toolbox.initLassoCanvas = () => {
         zIndex: '10'
     });
 
-    canvas.width  = THOTH.Scene._renderer.domElement.width;
-    canvas.height = THOTH.Scene._renderer.domElement.height;
+    canvas.width  = THOTH._renderer.domElement.width;
+    canvas.height = THOTH._renderer.domElement.height;
 
     // Retrieve context for frawing functions
     Toolbox.lassoCtx = canvas.getContext('2d');
@@ -64,7 +64,7 @@ Toolbox.initLassoCanvas = () => {
 
 Toolbox.initLasso = () => {
     // Wait for query
-    // while (!THOTH.Scene._queryData?.o) {
+    // while (!THOTH._queryData?.o) {
     //     await new Promise(resolve => setTimeout(resolve, 100));
     // }
 
@@ -92,7 +92,7 @@ Utils
 Toolbox.getMousePosition = (event) => {
     if (!Toolbox.lassoCtx) return { x: 0, y: 0 };
 
-    const rect = THOTH.Scene._renderer.domElement.getBoundingClientRect();
+    const rect = THOTH._renderer.domElement.getBoundingClientRect();
 
     return {
         x: (event.clientX - rect.left),
@@ -136,9 +136,9 @@ Selection Utils
 ===========================================================*/
 
 Toolbox.selectMultipleFaces = (brushSize, mesh) => {
-    if (!mesh) mesh = THOTH.Scene.mainMesh;
+    if (!mesh) mesh = THOTH.mainMesh;
 
-    let hitPoint = THOTH.Scene._queryData.p;
+    let hitPoint = THOTH._queryData.p;
 
     if (!hitPoint) return false;
 
@@ -198,7 +198,7 @@ Visualization
 
 Toolbox.highlightFacesOnObject = (selectedFaces, mesh, color) => {
     if (!selectedFaces || selectedFaces.length === 0) return false;
-    if (!mesh) mesh   = THOTH.Scene.mainMesh;
+    if (!mesh) mesh   = THOTH.mainMesh;
     if (!color) color = Toolbox.highlightColor;
 
     // Convert to RGB
@@ -241,7 +241,7 @@ Toolbox.highlightFacesOnObject = (selectedFaces, mesh, color) => {
 };
 
 Toolbox.clearFaceHighlights = (mesh) => {
-    if (!mesh) mesh = THOTH.Scene.mainMesh;
+    if (!mesh) mesh = THOTH.mainMesh;
     if (!mesh.geometry.attributes.color) return false;
 
     const colorAttr = mesh.geometry.attributes.color;
@@ -257,7 +257,7 @@ Toolbox.clearFaceHighlights = (mesh) => {
 };
 
 Toolbox.highlightVisibleSelections = (selections, mesh) => {
-    if (!mesh) mesh = THOTH.Scene.mainMesh;
+    if (!mesh) mesh = THOTH.mainMesh;
     if (!selections) selections = THOTH.annotations;
 
     if (mesh === undefined) return false;
@@ -295,8 +295,8 @@ Toolbox.brushTool = (currAnnotationParams, brushSize = Toolbox.brushRadius) => {
         console.warn("No selected annotation");
         return false;
     }
-    if (!THOTH.Scene._queryData?.o) return false; // Only work when over mesh
-    const mesh = THOTH.Scene.mainMesh;
+    if (!THOTH._queryData?.o) return false; // Only work when over mesh
+    const mesh = THOTH.mainMesh;
 
     // Get newly selected faces
     const newFaces = Toolbox.selectMultipleFaces(brushSize, mesh);
@@ -324,8 +324,8 @@ Toolbox.eraserTool = (currAnnotationParams, brushSize = Toolbox.brushRadius) => 
         console.warn("No selected annotation");
         return false;
     }
-    if (!THOTH.Scene._queryData?.o) return false; // Only work when over mesh
-    const mesh = THOTH.Scene.mainMesh;
+    if (!THOTH._queryData?.o) return false; // Only work when over mesh
+    const mesh = THOTH.mainMesh;
 
     // Get newly selected faces
     let newFaces = Toolbox.selectMultipleFaces(brushSize, mesh);
@@ -420,10 +420,10 @@ Toolbox.cleanupLasso = () => {
 
 Toolbox.processLassoSelection = (currAnnotationParams) => {
     if (!Toolbox.lassoState.points || Toolbox.lassoState.points.length < 3) return;
-    if (!THOTH.Scene.mainMesh) return;
+    if (!THOTH.mainMesh) return;
 
     const lassoPoints = Toolbox.lassoState.points;
-    const mesh = THOTH.Scene.mainMesh;
+    const mesh = THOTH.mainMesh;
     const geometry = mesh.geometry;
     const camera = THOTH._camera;
     const canvas = Toolbox.lassoCtx.canvas;
@@ -509,7 +509,7 @@ Toolbox.getLassoPixels = () => {
 
 Toolbox.lassoTool = (event) => {
     if (!event) return;
-    if (!THOTH.Scene.mainMesh) return;
+    if (!THOTH.mainMesh) return;
     if (!Toolbox.lassoState) return;
 
     // Toolbox.updateMousePosition(event);

@@ -44,6 +44,7 @@ FE.init = () => {
 Event Handlers
 ===========================================================*/
 
+
 FE.setupEventHandlers = () => {
     // let el = ATON._renderer.domElement;
     let el = document;
@@ -401,7 +402,7 @@ FE.setupExportPane = () => {
     });
 
     exportAnnotationBtn.on('click', () => {
-        THOTH.exportAnnotations();
+        THOTH.Scene.exportAnnotations();
     });
 };
 

@@ -9,31 +9,7 @@ let Scene = {};
 
 
 Scene.init = () => {
-    Scene.initRC();
     Scene.sid = Scene.getSceneID();
-};
-
-Scene.initRC = () => {
-    // Raycaster
-    Scene._raycaster = new THREE.Raycaster();
-    Scene._raycaster.layers.set(ATON.NTYPES.SCENE);
-    Scene._raycaster.firstHitOnly = true;
-
-    // Color propertied for face selection
-    Scene.mainMesh.material.vertexColors = true;
-    Scene.mainMesh.material.needsUpdate  = true;
-
-    // Initialize vertex colors if they don't exist
-    if (!Scene.mainMesh.geometry.attributes.color) {
-        THOTH.log("Initializing color");
-        
-        const colorArray = new Float32Array(Scene.mainMesh.geometry.attributes.position.count * 3);
-        colorArray.fill(THOTH.Mat.colorsThree.white); // Default white color
-
-        const colorAttr = new THREE.BufferAttribute(colorArray, 3);
-        
-        Scene.mainMesh.geometry.setAttribute('color', colorAttr);
-    }
 };
 
 
@@ -47,4 +23,67 @@ Scene.getSceneID = (sid) => {
     };
 
     return sid;
+};
+
+
+Scene.exportAnnotations = () => {
+    THOTH.log("Exporting annotations...");
+
+    let A = Scene.annotations2Object(THOTH.annotations);
+    
+    // Just remove all annotation objects and ADD them again with changes
+    
+    // Patch changes
+    THOTH.patch(A, ATON.SceneHub.MODE_ADD, () => {
+        THOTH.log("Success!");
+    });
+};
+
+Scene.annotations2Object = (annotationArray) => {
+    const annotationObject = {};
+    annotationObject.annotations = {};
+
+    for (let i=0; i<annotationArray.length; i++) {
+        const name = annotationArray[i].name;
+        const faceIndices = Array.from(annotationArray[i].faceIndices);
+
+        // Add to annotation object
+        annotationObject.annotations[name] = annotationArray[i];
+        annotationObject.annotations[name].faceIndices = faceIndices;
+    };
+    return annotationObject;
+};
+
+Scene.importAnnotations = async (sid, onSuccess) => {
+    if (sid === undefined) return;
+
+    THOTH.log("Importing annotations from scene: "+sid);
+    
+    const reqpath = ATON.PATH_RESTAPI2+"scenes/"+sid;
+
+    return new Promise((resolve, reject) => {
+        THOTH.Utils.getJSON(reqpath, (data) => {
+            // Parse JSON and apply to scene
+            Scene.parseJSON(data);
+    
+            if (onSuccess) onSuccess();
+            resolve();
+        });
+    });
+};
+
+Scene.parseJSON = (data) => {
+    if (data.annotations === undefined) return;
+
+    // Convert annotations object to array and parse
+    THOTH.annotations = Object.values(data.annotations);
+
+    // Iterate through the array
+    Object.keys(THOTH.annotations).forEach(i => {
+        // Convert faceIndices to Sets
+        THOTH.annotations[i].faceIndices = new Set(THOTH.annotations[i].faceIndices);
+
+        // Create annotation button for each
+        THOTH.FE.createNewAnnotationUI(THOTH.annotations[i]);
+    });
 };
