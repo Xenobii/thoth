@@ -5,7 +5,6 @@ author: steliosalvanos@gmail.com
 
 ===========================================================*/
 
-
 let THOTH = new ATON.Flare("thoth");
 
 THOTH.FE      = FE;
@@ -14,13 +13,54 @@ THOTH.Toolbox = Toolbox;
 THOTH.Utils   = Utils;
 THOTH.Scene   = Scene;
 
+// Layer class
+
+class Layer {
+    constructor(id) {
+        this.id = id;
+        this.name = "Layer " + id;
+        this.description = " ";
+        this.selection = new Set();
+        this.visible = true;
+        this.highlightColor = this.getHighlightColor(id);
+    }
+
+    getHighlightColor(id) {
+        // Create a rotating color for clarity
+        const r = parseInt(255 * Math.sin(id * Math.PI/4)/2 + 128);
+        const g = parseInt(255 * Math.sin(id * Math.PI/4 + 2* Math.PI/3)/2 + 128);
+        const b = parseInt(255 * Math.sin(id * Math.PI/4 - 2* Math.PI/3)/2 + 128);
+
+        const color = THOTH.Utils.rgb2hex(r, g, b);
+
+        return color;
+    }
+
+    toJSON() {
+        return {
+            id: this.id,
+            name: this.name,
+            description: this.description,
+            selection: Array.from(this.selection),
+            visible: this.visible,
+            highlightColor: this.highlightColor
+        };
+    }
+
+    static fromJSON(json) {
+        // logic here
+    }
+};
+
+
 // Flare setup
 
 THOTH.setup = async () => {
-    THOTH._bLeftMouseDown   = false;
-
-    THOTH._bLoading   = true;
-    THOTH._bAtonReady = false;
+    THOTH._bLeftMouseDown = false;
+    
+    THOTH._bPauseQuery = false;
+    THOTH._bLoading    = true;
+    THOTH._bAtonReady  = false;
 
     ATON.on("AllNodeRequestsCompleted", () => {
         THOTH._bAtonReady = true;
@@ -28,7 +68,7 @@ THOTH.setup = async () => {
 
     // ATON Overhead
     await THOTH._parseAtonElements();
-    
+
     // Mat
     THOTH.Mat.init();
     
@@ -36,21 +76,27 @@ THOTH.setup = async () => {
     THOTH.Scene.init();
     THOTH.initRC();
 
+    // Layers
+    THOTH.layers = new Map();
+    THOTH.Scene.importLayers();
+    THOTH.updateVisibility();
+    
     // Toolbox
     THOTH.Toolbox.init();
-
+    
     // Front End
     THOTH.FE.init();
-    
-    // Annotations
-    THOTH.annotations = [];
-    THOTH.Scene.importAnnotations(THOTH.Scene.sid);
-    THOTH.updateVisibility();
+
+    // Event listeners
+    THOTH.initEventListeners();
 };
 
 THOTH.update = () => {
+    if (THOTH._bPauseQuery) return;
+
     THOTH._queryData = ATON._queryDataScene;
 };
+
 
 // Inits
 
@@ -109,144 +155,207 @@ THOTH.initRC = () => {
     THOTH._raycaster.layers.set(THOTH.RCLayer);
     THOTH._raycaster.firstHitOnly = true;
 
+    if (!THOTH.mainMesh.geometry.boundsTree) {
+        console.log("No bounds tree, computing bounds tree");
+        THOTH.mainMesh.geometry.computeBoundsTree();
+    }
+
     // Color propertied for face selection
     THOTH.mainMesh.material.vertexColors = true;
     THOTH.mainMesh.material.needsUpdate  = true;
 
     // Initialize vertex colors if they don't exist
     if (!THOTH.mainMesh.geometry.attributes.color) {
-        THOTH.log("Initializing color");
+        let colorArray, colorAttr;
         
-        const colorArray = new Float32Array(THOTH.mainMesh.geometry.attributes.position.count * 3);
-        colorArray.fill(THOTH.Mat.colorsThree.white); // Default white color
+        const defaultColor = new THREE.Color(0xffffff);
 
-        const colorAttr = new THREE.BufferAttribute(colorArray, 3);
+        colorArray = new Float32Array(THOTH.mainMesh.geometry.attributes.position.count * 3);
+        for (let i = 0; i < THOTH.mainMesh.geometry.attributes.position.count; i++) {
+            colorArray[i * 3 + 0] = defaultColor.r;
+            colorArray[i * 3 + 1] = defaultColor.g;
+            colorArray[i * 3 + 2] = defaultColor.b;
+        }
+
+        colorAttr = new THREE.BufferAttribute(colorArray, 3);
         
         THOTH.mainMesh.geometry.setAttribute('color', colorAttr);
     }
 };
 
-/* 
-Utils
-===========================================================*/
+THOTH.initEventListeners = () => {
+    let el = THOTH._renderer.domElement;
+    let w  = window;
 
-THOTH.getSelectorRadius = () => {
-    return ATON.SUI._selectorRad;
+    el.addEventListener('resize', () => {
+        THOTH._camera.aspect = w.innerWidth / w.innerHeight;
+        THOTH._camera.updateProjectionMatrix();
+        THOTH._renderer.setSize(w.innerWidth, w.innerHeight);
+    }, false)
+
+    el.addEventListener('mousemove', (e) => {
+        Toolbox._updateScreenMove(e);
+    }, false);
+
+    el.addEventListener('mousedown', (e) => {
+        if (e.button === 0) THOTH._bLeftMouseDown = true;
+        if (e.button === 2) THOTH._bRightMouseDown = true;
+    }, false);
+    
+    el.addEventListener('mouseup', (e) => {
+        if (e.button === 0) THOTH._bLeftMouseDown = false;
+        if (e.button === 2) THOTH._bRightMouseDown = false;
+    }, false);
 };
 
-/* 
-History
-===========================================================*/
 
-/* 
-Annotation Management
-===========================================================*/
+// Visualization
 
-THOTH.createNewAnnotationParams = () => {
-    let idx = undefined;
-    
-    // Determine the index at which to place annotation
-    for (let i=0; i<THOTH.annotations.length + 1; i++) {
-        // Otherwise place new Annotation at the end of the array
-        if (THOTH.annotations[i] === undefined) {
-            idx = i + 1;
-            break;
-        };
-        // Check if annotation was removed at index i 
-        // If yes, create index there
-        if (THOTH.annotations[i].index !== i + 1) {
-            idx = i + 1;
-            break;
-        };
-    };
+THOTH.highlightSelections = () => {
+    THOTH.layers.forEach((layer, id) => {
+        if (!layer.visible) return;
 
-    // Create name based on index
-    const name = `Annotation ${idx}`;
-    
-    // Create a rotating color for clarity
-    const r = parseInt(255 * Math.sin(idx * Math.PI/4)/2 + 128);
-    const g = parseInt(255 * Math.sin(idx * Math.PI/4 + 2* Math.PI/3)/2 + 128);
-    const b = parseInt(255 * Math.sin(idx * Math.PI/4 - 2* Math.PI/3)/2 + 128);
-    const color = THOTH.Utils.rgb2hex(r, g, b);
+        const selection      = layer.selection;
+        const highlightColor = THOTH.Utils.hex2rgb(layer.highlightColor);
+        
+        if (selection === undefined || selection.size === 0) return;
 
-    return {
-        idx :  idx,
-        name:  name,
-        color: color, 
-    };
-};
+        const colorAttr = THOTH.mainMesh.geometry.attributes.color;
+        const indexAttr = THOTH.mainMesh.geometry.index;
 
-THOTH.createNewAnnotation = () => {
-    // Defined annotation index for convenience
-    const newAnnotationParams = THOTH.createNewAnnotationParams();
+        const colors = colorAttr.array;
+        const stride = colorAttr.itemSize;
+        const r = highlightColor.r, g = highlightColor.g, b = highlightColor.b;
 
-    THOTH.log("Created new Annotation: " + newAnnotationParams.name);
-    
-    // Default annotation params
-    const newAnnotation = {
-        index: newAnnotationParams.idx,
-        name: newAnnotationParams.name,
-        visible: true,
-        highlightColor: newAnnotationParams.color,
-        faceIndices: new Set(),
-        description: "Nothing here yes",
-    };
-    
-    // Create annotation folder 
-    THOTH.FE.createNewAnnotationUI(newAnnotation);
-    
-    // Add to annotation array
-    THOTH.annotations.splice(newAnnotation.index - 1, 0, newAnnotation);
-};
-
-THOTH.deleteAnnotation = (annotationParams) => {
-    THOTH.log("Removing " + annotationParams.name + " with index " + annotationParams.index);
-
-    // Find corresponding index in arrays
-    let idx = undefined;
-    for (let i=0; i<THOTH.annotations.length; i++) {
-        if (annotationParams.index === THOTH.annotations[i].index)
-        {
-            idx = i;
-            break;
+        const writeVertex = (base) => {
+            colors[base    ] = r;
+            colors[base + 1] = g;
+            colors[base + 2] = b;
         }
-    };
 
-    // Remove buttons
-    THOTH.FE.annotationButtons[idx].dispose();
-    THOTH.FE.annotationButtons.splice(idx, 1);
-    // THOTH.FE.annotationButtons[annotationParams.index - 1] = undefined;
-    THOTH.FE.detailTabs.dispose();
+        if (indexAttr) {
+            const indices = indexAttr.array;
+            for (const face of selection){
+                writeVertex(indices[face * 3    ] * stride);
+                writeVertex(indices[face * 3 + 1] * stride);
+                writeVertex(indices[face * 3 + 2] * stride);
+            }
+        } else {
+            for (const face of selection){
+                const faceStart = face * 3 * stride;
+                writeVertex(faceStart);
+                writeVertex(faceStart + stride);
+                writeVertex(faceStart + 2 * stride);
+            }
+        }
 
-    // Remove from annotations array
-    THOTH.annotations.splice(idx, 1);  
-
-    // Update visuals
-    THOTH.updateVisibility();
+        colorAttr.needsUpdate = true;
+        return;
+    });
 };
 
-THOTH.editAnnotationName = (annotationParams) => {
-    // Find corresponding index in arrays
-    let idx = undefined;
-    for (let i=0; i<THOTH.annotations.length; i++) {
-        if (annotationParams.index === THOTH.annotations[i].index)
-        {
-            idx = i;
-            break;
-        }
-    };
+THOTH.clearHighlights = () => {
+    const colorAttr = THOTH.mainMesh.geometry.attributes.color;
+    const colorArray = colorAttr.array;
 
-    // Edit buttons
-    THOTH.FE.annotationButtons[idx].title = annotationParams.name;
+    for (let i=0; i < colorArray.length; i++) {
+        colorArray[i] = 1;
+    }
 
-    // annotationParams.name = newName;
+    colorAttr.needsUpdate = true;
 };
 
 THOTH.updateVisibility = () => {
-    THOTH.Toolbox.highlightVisibleSelections(THOTH.annotations);
+    THOTH.clearHighlights();
+    THOTH.highlightSelections();
 };
 
 
-// TODO: Do proper finction assignment
-// TODO: Fix toolbox
-// TODO: Swap annotations with a Map()
+// Selection management
+
+THOTH.addFacesToSelection = (newFaces, selection) => {
+    if (newFaces === undefined || !newFaces.length) return;
+        
+    const newFacesSet = new Set(newFaces);
+    newFacesSet.forEach(f => {
+        if (!selection.has(f)) {
+            selection.add(f);
+        }
+    });
+
+    return selection;
+};
+
+THOTH.addFacesToSelection = (newFaces, selection) => {
+    if (newFaces === undefined || !newFaces.length) return;
+        
+    const newFacesSet = new Set(newFaces);
+    newFacesSet.forEach(f => {
+        if (!selection.has(f)) {
+            selection.delete(f);
+        }
+    });
+
+    return selection;
+};
+
+
+// Layers
+
+THOTH.createNewLayer = () => {
+    // Util function for retrieving the first unused id in the Layers Map for initialization
+    function getFirstUnusedKey(map) {
+        let i = 0;
+        while (map.has(i)) {
+            i++;
+        }
+        return i;
+    };
+
+    const id = getFirstUnusedKey(THOTH.layers)
+    const newLayer = new Layer(id);
+
+    THOTH.layers.set(id, newLayer);
+    
+    THOTH.log("Created new layer: " + newLayer.name);
+
+    // Create layer folder 
+    THOTH.FE.addToLayers(id);
+};
+
+THOTH.deleteLayer = (id) => {
+    const layer       = THOTH.layers.get(id);
+    const layerButton = THOTH.FE.layerButtons.get(id);
+
+    // If layer is activeLayer, dispose of details
+    if (layer === THOTH.activeLayer) {
+        if (FE.detailTabs) FE.detailTabs.dispose();
+    }
+
+    // Delete layer button
+    layerButton.dispose();
+    THOTH.FE.layerButtons.delete(id);
+    
+    // Delete layer
+    THOTH.layers.delete(id);
+    THOTH.activeLayer = undefined;
+    
+    
+    // Update visuals
+    THOTH.updateVisibility();
+    
+    THOTH.log("Deleted layer: " + layer.name);
+};
+
+THOTH.editLayerName = (id) => {
+    // Edit layer
+    const layer = THOTH.layers.get(id);
+
+    // Edit buttons
+    const layerBtn = THOTH.FE.layerButtons.get(id);
+    layerBtn.title = layer.name;
+};
+
+// TODO: Reschedule FE
+// TODO: Remove Mat, geomteryHelpers and Utils
+// TODO: Modify import/export

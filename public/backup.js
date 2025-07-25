@@ -5,6 +5,51 @@ THOTH.on = ATON.on;
 THOTH.fire = ATON.fire;
 
 
+Toolbox.highlightFacesOnObject = (selectedFaces, mesh, color) => {
+    if (!selectedFaces || selectedFaces.length === 0) return false;
+    if (!mesh) mesh   = THOTH.Scene.mainMesh;
+    if (!color) color = Toolbox.highlightColor;
+
+    // Convert to RGB
+    const rgbColor = THOTH.Utils.hex2rgb(color);
+
+    const geometry  = mesh.geometry;
+    const colorAttr = geometry.attributes.color;
+    const indexAttr = geometry.index;
+    
+    const colors = colorAttr.array;
+    const stride = colorAttr.itemSize;
+    const r = rgbColor.r, g = rgbColor.g, b = rgbColor.b;
+    
+    const writeVertex = (base) => {
+        colors[base    ] = r;
+        colors[base + 1] = g;
+        colors[base + 2] = b;
+    }
+
+    if (indexAttr) {
+        // Indexed geometry
+        const indices = indexAttr.array;
+        for (const {index:face} of selectedFaces){
+            writeVertex(indices[face * 3    ] * stride);
+            writeVertex(indices[face * 3 + 1] * stride);
+            writeVertex(indices[face * 3 + 2] * stride);
+        }
+    } else {
+        // Non-indexed geometry
+        for (const {index:face} of selectedFaces){
+            const faceStart = face * 3 * stride;
+            writeVertex(faceStart);
+            writeVertex(faceStart + stride);
+            writeVertex(faceStart + 2 * stride);
+        }
+    }
+
+    colorAttr.needsUpdate = true;
+    return true;
+};
+
+
 class Layer {
     constructor() {
         this.name = "Untitled";

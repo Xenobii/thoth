@@ -54,7 +54,23 @@ Scene.annotations2Object = (annotationArray) => {
     return annotationObject;
 };
 
-Scene.importAnnotations = async (sid, onSuccess) => {
+
+Scene.importLayers = () => {
+    THOTH.log("Importing scene layers");
+
+    layerData = THOTH.currData.layers;
+
+    if (layerData === undefined) return;
+
+    for (const layer of layerData) {
+        THOTH.log(layer)
+        THOTH.layers.set(layer.id, layer);
+    }
+};
+
+
+// Unnecessary on init with currData
+Scene.importAnnotationsfromJSON = async (sid, onSuccess) => {
     if (sid === undefined) return;
 
     THOTH.log("Importing annotations from scene: "+sid);

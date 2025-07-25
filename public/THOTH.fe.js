@@ -7,145 +7,20 @@
 
 let FE = {};
 
-// Starting from after HATHOR selection actions
-FE.SELACTION_STD    = 1;
-FE.SELACTION_EDIT   = 2;
-
-FE.TOOL_NONE   = 0;
-FE.TOOL_BRUSH  = 1;
-FE.TOOL_ERASER = 2;
-FE.TOOL_LASSO  = 3;
-
-FE._actState = FE.SELACTION_STD;
-FE._tool     = undefined;
-
 /* 
 Init
 ===========================================================*/
 
 FE.init = () => {
-    FE._tool = FE.TOOL_NONE;
-    FE.currAnnotationParams = undefined;
-    FE.annotationButtons = [];
+    FE.layerButtons = new Map();
 
-    FE.toolSizes = {
-        brushScale  : 0.0,
-        eraserScale : 0.0,
-    };
-    FE.brushSize  = FE.computeToolRadius(FE.toolSizes.brushScale),
-    FE.eraserSize = FE.computeToolRadius(FE.toolSizes.eraserScale),
+    FE._bPopup = false;
 
-    FE.setupEventHandlers();
     FE.setupUI();
-
 };
 
-/* 
-Event Handlers
-===========================================================*/
 
-
-FE.setupEventHandlers = () => {
-    // let el = ATON._renderer.domElement;
-    let el = document;
-
-    // Left mouse down
-    el.addEventListener('mousedown', (e) => {
-        if (e.button === 0) {
-            THOTH._bLeftMouseDown = true;
-
-            // Record state
-            
-            // Brush
-            if (FE._tool === FE.TOOL_BRUSH) {
-                THOTH.Toolbox.brushTool(FE.currAnnotationParams, FE.brushSize);
-            }
-
-            // Eraser
-            if (FE._tool === FE.TOOL_ERASER) {
-                THOTH.Toolbox.eraserTool(FE.currAnnotationParams, FE.eraserSize);
-            }
-
-            // Lasso
-            if (FE._tool === FE.TOOL_LASSO) {
-                THOTH.Toolbox.lassoTool(e);
-            }
-        }
-    });
-
-    // Left mouse up
-    el.addEventListener('mouseup', (e) => {
-        if (e.button === 0) {
-            THOTH._bLeftMouseDown = false;
-
-            if (FE._tool === FE.TOOL_LASSO) {
-                THOTH.Toolbox.endLasso(FE.currAnnotationParams);
-            }
-        }
-    });
-
-    // Mouse Move
-    el.addEventListener('mousemove', (e) => {
-        if (THOTH._bLeftMouseDown) {
-            // Brush
-            if (FE._tool === FE.TOOL_BRUSH) {
-                THOTH.Toolbox.brushTool(FE.currAnnotationParams, FE.brushSize);
-            }
-
-            // Eraser
-            if (FE._tool === FE.TOOL_ERASER) {
-                THOTH.Toolbox.eraserTool(FE.currAnnotationParams, FE.eraserSize);
-            }
-
-            // Lasso
-            if (FE._tool === FE.TOOL_LASSO) {
-                THOTH.Toolbox.lassoTool(e);
-            }
-        }
-    });
-
-    // Key Press
-    el.addEventListener('keydown', (k) => {
-        // Increase tool radius
-        if (k.key === '['){
-            // Brush
-            if (FE._tool === FE.TOOL_BRUSH) {
-                FE.toolSizes.brushScale = FE.toolSizes.brushScale - 1;
-                FE.brushSize  = FE.computeToolRadius(FE.toolSizes.brushScale);
-                FE.toolboxPane.refresh();
-            }
-            // Eraser
-            if (FE._tool === FE.TOOL_ERASER) {
-                FE.toolSizes.eraserScale = FE.toolSizes.eraserScale - 1;
-                FE.eraserSize  = FE.computeToolRadius(FE.toolSizes.eraserScale);
-                FE.toolboxPane.refresh();
-            }
-        }
-        
-        // Dencrease tool radius
-        if (k.key === ']'){
-            if (FE._tool === FE.TOOL_BRUSH) {
-                FE.toolSizes.brushScale = FE.toolSizes.brushScale + 1;
-                FE.brushSize  = FE.computeToolRadius(FE.brushScale);
-                FE.toolboxPane.refresh();
-            }
-            if (FE._tool === FE.TOOL_ERASER) {
-                FE.toolSizes.eraserScale = FE.toolSizes.eraserScale + 1;
-                FE.eraserSize  = FE.computeToolRadius(FE.toolSizes.eraserScale);
-                FE.toolboxPane.refresh();
-            }
-        }
-    });
-
-};
-
-FE.computeToolRadius = (r) => {
-    return (0.25 * 1.2**r);
-};
-
-/* 
-UI Setup
-===========================================================*/
+// Setup
 
 FE.setupUI =() => {
     // Create new containers
@@ -204,17 +79,17 @@ FE.setupUI =() => {
         expanded: true,
     });
 
-    // Quick Select Layer Pane
-    FE.layerSelectionPane = new Pane({
+    // Layer Pane
+    FE.layerPane = new Pane({
         container: topRightContainer,
-        title: 'Annotations',
+        title: 'Layers',
         expanded: true,
     });
     
     // Details Pane
     FE.detailsPane = new Pane({
         container: bottomRightContainer,
-        title: 'Annotation details',
+        title: 'Layer details',
         expanded: true,
     });
 
@@ -225,9 +100,11 @@ FE.setupUI =() => {
     });
 
     FE.setupToolboxPane();
-    FE.setupLayerManagementPane();
+    FE.setupLayerPane();
     FE.setupExportPane();
 };
+
+// Toolbox
 
 FE.setupToolboxPane = () => {
     // Brush
@@ -235,13 +112,8 @@ FE.setupToolboxPane = () => {
         title: 'Brush',
     });
     btnBrush.on('click', () => {
-        if (FE._tool !== FE.TOOL_BRUSH) {
-            // Disable Nav
-            ATON.Nav.setUserControl(false);
-            
-            FE._tool = FE.TOOL_BRUSH;
-            FE.updateToolRadiusUI();
-        }
+        THOTH.Toolbox.activateBrush();
+        ATON.Nav.setUserControl(false);
     });
 
     // Eraser
@@ -249,13 +121,8 @@ FE.setupToolboxPane = () => {
         title: 'Eraser',
     });
     btnEraser.on('click', () => {
-        if (FE._tool !== FE.TOOL_ERASER) {
-            // Disable Nav
-            ATON.Nav.setUserControl(false);
-            
-            FE._tool = FE.TOOL_ERASER;
-            FE.updateToolRadiusUI();
-        }
+        THOTH.Toolbox.activateBrush();
+        ATON.Nav.setUserControl(false);
     });
 
     // Lasso
@@ -263,13 +130,8 @@ FE.setupToolboxPane = () => {
         title: 'Lasso',
     });
     btnLasso.on('click', () => {
-        if (FE._tool !== FE.TOOL_LASSO) {
-            // Disable Nav
-            ATON.Nav.setUserControl(false);
-            
-            FE._tool = FE.TOOL_LASSO;
-            FE.updateToolRadiusUI();
-        }
+        THOTH.Toolbox.activateLasso();
+        ATON.Nav.setUserControl(false);
     });
 
     // None
@@ -277,13 +139,8 @@ FE.setupToolboxPane = () => {
         title: 'None',
     });
     btnNone.on('click', () => {
-        if (FE._tool !== FE.TOOL_NONE) {
-            // Enable Nav
-            ATON.Nav.setUserControl(true);
-
-            FE._tool = FE.TOOL_NONE;
-            FE.updateToolRadiusUI();
-        }
+        THOTH.Toolbox.deactivate();
+        ATON.Nav.setUserControl(true);
     });
 };
 
@@ -291,15 +148,15 @@ FE.updateToolRadiusUI = () => {
     if (FE.toolboxPane.brushScale)  FE.toolboxPane.brushScale.dispose();
     if (FE.toolboxPane.eraserScale) FE.toolboxPane.eraserScale.dispose();
     
-    if (FE._tool === FE.TOOL_BRUSH) {
-        FE.toolboxPane.brushScale = FE.toolboxPane.addBinding(FE.toolSizes, 'brushScale', {
+    if (THOTH.Toolbox.brushEnabled) {
+        FE.toolboxPane.brushScale = FE.toolboxPane.addBinding(THOTH.Toolbox.selectorSize, 'brushScale', {
             min: -10,
             max:  10,
             step: 1,
         });
     }
-    if (FE._tool === FE.TOOL_ERASER) {
-        FE.toolboxPane.eraserScale = FE.toolboxPane.addBinding(FE.toolSizes, 'eraserScale', {
+    if (THOTH.Toolbox.brushEnabled) {
+        FE.toolboxPane.eraserScale = FE.toolboxPane.addBinding(THOTH.Toolbox.selectorSize, 'eraserScale', {
             min: -10,
             max:  10,
             step: 1,
@@ -310,44 +167,52 @@ FE.updateToolRadiusUI = () => {
     // Brush
     if (FE.toolboxPane.brushScale) {
         FE.toolboxPane.brushScale.on('change', (e) => {
-            FE.brushSize = FE.computeToolRadius(FE.toolSizes.brushScale);
+            THOTH.Toolbox.setSelectorSize(THOTH.Toolbox.selectorSize);
         });
     }
     // Eraser 
     if (FE.toolboxPane.eraserScale) {
         FE.toolboxPane.eraserScale.on('change', (e) => {
-            FE.eraserSize = FE.computeToolRadius(FE.toolSizes.eraserScale);
+            THOTH.Toolbox.setSelectorSize(THOTH.Toolbox.selectorSize);
         });
     }
 };
 
-FE.setupLayerManagementPane = () => {
-    const addAnnotationBtn = FE.layerManagementPane.addButton({
-        title: "New Annotation",
+// Layers
+
+FE.setupLayerPane = () => {
+    const newLayerBtn = FE.layerManagementPane.addButton({
+        title: "New Layer",
     });
 
-    addAnnotationBtn.on('click', () => {
-        THOTH.createNewAnnotation();
+    newLayerBtn.on('click', () => {
+        THOTH.createNewLayer();
     });
 };
 
-FE.createNewAnnotationUI = (annotationParams) => {
-    const newAnnotation = FE.layerSelectionPane.addButton({
-        title: annotationParams.name,
+FE.addToLayers = (id) => {
+    const layer    = THOTH.layers.get(id); 
+    const layerBtn = FE.layerPane.addButton({
+        title: layer.name,
     });
 
-    FE.annotationButtons.splice(annotationParams.index - 1, 0, newAnnotation);
-    
+    // Add to buttons for future reference
+    FE.layerButtons.set(id, layerBtn)
+
     // Event handler
-    newAnnotation.on('click', () => {
-        // Switch to current annotation
-        FE.currAnnotationParams = annotationParams;
-        FE.setupDetailsUI(annotationParams);
+    layerBtn.on('click', () => {
+        // Switch to current layer
+        THOTH.activeLayer = layer;
+        FE.displayDetails();
     });
 };
 
-FE.setupDetailsUI = (annotationParams) => {
+// Details
+
+FE.displayDetails = () => {
     if (FE.detailTabs) FE.detailTabs.dispose();
+
+    const activeLayer = THOTH.activeLayer;
     
     FE.detailTabs = FE.detailsPane.addTab({
         pages: [
@@ -357,44 +222,46 @@ FE.setupDetailsUI = (annotationParams) => {
     });
 
     // General Attributes
-    FE.name    = FE.detailTabs.pages[0].addBinding(annotationParams, 'name'); 
-    FE.visible = FE.detailTabs.pages[0].addBinding(annotationParams, 'visible');
-    FE.color   = FE.detailTabs.pages[0].addBinding(annotationParams, 'highlightColor', {
+    const nameAttr    = FE.detailTabs.pages[0].addBinding(activeLayer, 'name'); 
+    const visibleAttr = FE.detailTabs.pages[0].addBinding(activeLayer, 'visible');
+    const colorAttr   = FE.detailTabs.pages[0].addBinding(activeLayer, 'highlightColor', {
         picker: 'inline',
         expanded: true,
     });
 
     // Detail Attributes
-    FE.description = FE.detailTabs.pages[1].addBinding(annotationParams, 'description', {
+    const descriptionAttr = FE.detailTabs.pages[1].addBinding(activeLayer, 'description', {
         multiline: true,
         rows: 4
     });
-    FE.editDescription = FE.detailTabs.pages[0].addButton({
-        title: "Edit Annotation"
+    const editDescriptionBtn = FE.detailTabs.pages[0].addButton({
+        title: "Edit Description"
     });
 
     // Buttons
-    FE.delete  = FE.detailTabs.pages[0].addButton({
-        title: "Delete Annotation",
+    const deleteBtn  = FE.detailTabs.pages[0].addButton({
+        title: "Delete Layer",
     });
 
     // Event listeners
-    FE.name.on('change', () => {
-        THOTH.editAnnotationName(annotationParams);
+    nameAttr.on('change', () => {
+        THOTH.editLayerName(activeLayer.id);
     });
-    FE.visible.on('change', () => {
+    visibleAttr.on('change', () => {
         THOTH.updateVisibility();
     });
-    FE.color.on('change', () => {
+    colorAttr.on('change', () => {
         THOTH.updateVisibility();
     });
-    FE.delete.on('click', () => {
-        FE.popupConfirmDelete(annotationParams);
+    deleteBtn.on('click', () => {
+        FE.popupConfirmDelete(activeLayer.id);
     });
-    FE.editDescription.on('click', () => {
-        FE.popupEditDescription(annotationParams);
+    editDescriptionBtn.on('click', () => {
+        FE.popupEditDescription(activeLayer.id);
     })
 };
+
+// Export
 
 FE.setupExportPane = () => {
     const exportAnnotationBtn = FE.exportPane.addButton({
@@ -406,7 +273,11 @@ FE.setupExportPane = () => {
     });
 };
 
-FE.popupConfirmDelete2 = (annotationParams) => {
+// Popups
+
+FE.popupConfirmDeleteTK = (id) => {
+    const layer = THOTH.layers.get(id);
+
     // Don't create popup if it already exists
     if (FE.popupPane && FE.popupPane.containerElem_ !== null) return;
 
@@ -427,7 +298,7 @@ FE.popupConfirmDelete2 = (annotationParams) => {
     });
 
     deleteButton.on('click', () => {
-        THOTH.deleteAnnotation(annotationParams);
+        THOTH.deleteLayer(id);
         FE.popupPane.dispose();
     });
     cancelButton.on('click', () => {
@@ -449,7 +320,6 @@ FE.popupShow = (htmlcontent, cssClasses) => {
     FE._bPopup = true;
     ATON._bListenKeyboardEvents = false;
 
-
     $('#idPopup').html(htcont);
     $('#idPopupContent').click((e) => {e.stopPropagation(); });
     $('#idPopup').show();
@@ -469,15 +339,12 @@ FE.popupClose = () => {
     THOTH._bPauseQuery = false;
 };
 
-FE.popupConfirmDelete = (annotationParams) => {
-    let head = "Delete "+annotationParams.name + "?";
-    if (head === undefined) head = "Random annotation";
+FE.popupConfirmDelete = (id) => {
+    const layer = THOTH.layers.get(id);
 
-    // let description = annotationParams.description;
-    // if (description === undefined) description = "Huh, a description";
+    let head = "Delete "+ layer.name + "?";
 
     let htmlcontent = "<div class='atonPopupTitle'>"+head+"</div>";
-    // htmlcontent += "<div class='atonPopupDescriptionContainer'>"+description+"</div>";
 
     htmlcontent += "<div class='atonBTN atonBTN-green' id='btnOK' style='width:90%'>OK</div>";
     htmlcontent += "<div class='atonBTN atonBTN-green' id='btnCancel' style='width:90%'>Cancel</div>";
@@ -485,7 +352,7 @@ FE.popupConfirmDelete = (annotationParams) => {
     FE.popupShow(htmlcontent);
 
     $("#btnOK").click(() => {
-        THOTH.deleteAnnotation(annotationParams);
+        THOTH.deleteLayer(id);
         FE.popupClose();
     });
     $("#btnCancel").click(() => {
@@ -493,23 +360,25 @@ FE.popupConfirmDelete = (annotationParams) => {
     });
 };
 
-FE.popupEditDescription = (annotationParams) => {
-    let htmlcontent = FE._createPopupStd(annotationParams);
+FE.popupEditDescription = (id) => {
+    const layer = THOTH.layers.get(id);
+
+    let htmlcontent = FE._createPopupStd(id);
 
     FE.popupShow(htmlcontent, "atonPopupLarge");
 
     $("#descCont").toggle();
 
-    let SCE = FE.createTextEditor("desc");
+    let descriptionEditor = FE.createTextEditor("desc");
 
-    const description = annotationParams.description;
-    SCE.setWysiwygEditorValue(description);
+    const description = layer.description;
+    descriptionEditor.setWysiwygEditorValue(description);
 
     $("#btnOK").click(() => {
         const xxtmldescr = JSON.stringify($("#desc").val());
         console.log(xxtmldescr)
         console.log($("#desc").val())
-        annotationParams.description = xxtmldescr;
+        layer.description = xxtmldescr;
         FE.popupClose();
     });
     $("#btnCancel").click(() => {
@@ -518,10 +387,8 @@ FE.popupEditDescription = (annotationParams) => {
 };
 
 FE.createTextEditor = (idtextarea) => {
-    let txtarea = document.getElementById(idtextarea);
-    
-    let SCE = $("#"+idtextarea).sceditor({
-        id: "idSCEditor",
+    let descriptionEditor = $("#"+idtextarea).sceditor({
+        id: "descriptionEditor",
         //format: 'bbcode',
         //bbcodeTrim: true,
         width: "100%",
@@ -534,15 +401,16 @@ FE.createTextEditor = (idtextarea) => {
         toolbar: "bold,italic,underline,link,unlink,font,size,color,removeformat|left,center,right,justify|bulletlist,orderedlist,table,code|image,youtube|source"
     }).sceditor('instance');
 
-    return SCE;
+    return descriptionEditor;
 };
 
-FE._createPopupStd = (annotationParams) => {
-    let head = annotationParams.name;
-    if (head === undefined) head = "Random annotation";
+FE._createPopupStd = (id) => {
+    const layer = THOTH.layers.get(id);
+    
+    let head = layer.name;
 
-    let description = annotationParams.description;
-    if (description === undefined) description = "Huh, a description";
+    let description = layer.description;
+    if (description === null) description = " ";
 
     // Header
     let htmlcontent = "<div class='atonPopupTitle'>Edit "+head+"</div>";

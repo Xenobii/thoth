@@ -4,7 +4,6 @@
     "client": {
         "files": [
             "tweakpane.js",
-            "THOTH.geometryhelpers.js",
             "THOTH.utils.js",
             "THOTH.toolbox.js",
             "THOTH.fe.js",
