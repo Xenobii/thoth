@@ -43,6 +43,9 @@ Toolbox.initBrushEventListeners = () => {
             console.log("No layer selected!");
             return;
         };
+
+        if (THOTH._queryData === undefined) return;
+
         Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
         
         if (e.button === 0) Toolbox._brushActive();
@@ -61,6 +64,9 @@ Toolbox.initBrushEventListeners = () => {
         if (!Toolbox.brushEnabled) return;
 
         Toolbox._moveSelector();
+        
+        if (THOTH._queryData === undefined) return;
+
         if (THOTH._bLeftMouseDown === true)  Toolbox._brushActive();
         if (THOTH._bRightMouseDown === true) Toolbox._eraserActive();
     }, false);
@@ -92,6 +98,7 @@ Toolbox.initLassoEventListeners = () => {
     })
     el.addEventListener('mousemove', (e) => {
         if (!Toolbox.lassoEnabled) return;
+
         Toolbox._updatePixelPointerCoords(e);
         if (THOTH._bLeftMouseDown || THOTH._bRightMouseDown) Toolbox._updateLasso();
     })
@@ -151,7 +158,7 @@ Toolbox.initSelector = () => {
     Toolbox.selectorMesh.scale.setScalar(Toolbox.selectorRadius);
     Toolbox.selectorMesh.visible = false;
     THOTH._scene.add(Toolbox.selectorMesh);
-}
+};
 
 // update functions
 
@@ -264,11 +271,6 @@ Toolbox.delFacesFromSelection = (newFaces, selection) => {
 // Brush
 
 Toolbox._brushActive = () => {
-    if (THOTH.activeLayer === undefined) {
-        console.log("No layer selected!");
-        return;
-    };
-
     const newFaces = Toolbox._selectMultipleFaces();
     THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
     THOTH.clearHighlights();
@@ -371,8 +373,7 @@ Toolbox._updateLasso = () => {
 Toolbox._endLassoAdd = () => {
     const newFaces = Toolbox._processLassoSelection();
     
-    if (newFaces.length !== 0) {
-        console.log(THOTH.activeLayer)
+    if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
         THOTH.clearHighlights();
         THOTH.highlightSelections();
@@ -385,7 +386,7 @@ Toolbox._endLassoAdd = () => {
 Toolbox._endLassoSub = () => {
     const newFaces = Toolbox._processLassoSelection();
 
-    if (newFaces.length !== 0) {
+    if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.delFacesFromSelection(newFaces, THOTH.activeLayer.selection);
         THOTH.clearHighlights();
         THOTH.highlightSelections();
@@ -540,3 +541,7 @@ Toolbox.activateLasso = () => {
 Toolbox.deactivateBrush = () => Toolbox.brushEnabled = false;
 
 Toolbox.deactivateLasso = () => Toolbox.lassoEnabled = false;
+
+
+// IDEA: Do frustum culling for only a small area around the lasso selection
+// TODO: Discard unused variables (tempSelection) after tool usage

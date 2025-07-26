@@ -13,7 +13,11 @@ Designed as part of the [TEXTaiLES](https://textailes-eccch.eu/) program.
 
 4) Run/deploy ATON according to their [instructions](https://osiris.itabc.cnr.it/aton/index.php/tutorials/getting-started/).
 
+## Usage
+(Will update once beta is ready)
+
 # TODO List
 
-- [ ] Make this work for now
+- [x] Make this work for now
 - [ ] Debug collaborative
+- [ ] Lasso hyper-optimization with lasso selection frustum

@@ -356,6 +356,6 @@ THOTH.editLayerName = (id) => {
     layerBtn.title = layer.name;
 };
 
-// TODO: Reschedule FE
 // TODO: Remove Mat, geomteryHelpers and Utils
 // TODO: Modify import/export
+// TODO: Add block cursor on warning
