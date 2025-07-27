@@ -1,3 +1,9 @@
+/*
+    THOTH Plugin for ATON - Face selection toolbox
+
+    author: steliosalvanos@gmail.com
+
+===========================================================*/
 const { INTERSECTED, NOT_INTERSECTED, CONTAINED } = window.ThreeMeshBVH;
 
 
@@ -26,7 +32,8 @@ Toolbox.init = () => {
     Toolbox._bInitialized = true;
 };
 
-// init functions
+
+// Init functions
 
 Toolbox.initBrushEventListeners = () => {
     let el = THOTH._renderer.domElement;
@@ -40,7 +47,9 @@ Toolbox.initBrushEventListeners = () => {
         if (!Toolbox.brushEnabled) return;
 
         if (THOTH.activeLayer === undefined) {
+
             console.log("No layer selected!");
+            el.style.cursor = 'not-allowed';
             return;
         };
 
@@ -55,13 +64,26 @@ Toolbox.initBrushEventListeners = () => {
     el.addEventListener('mouseup', (e) => {
         if (!Toolbox.brushEnabled) return;
 
+        if (THOTH.activeLayer === undefined) {
+            return;
+        };
+
         if (e.button === 0 || e.button === 2) {
+            el.style.cursor = 'default';
+
+            THOTH.activeLayer.selection = new Set(Toolbox.tempSelection);
+            delete Toolbox.tempSelection;
+            THOTH.updateVisibility();
             // history logic
-        }
+        };
     }, false);
 
     el.addEventListener('mousemove', () => {
         if (!Toolbox.brushEnabled) return;
+
+        if (THOTH.activeLayer === undefined) {
+            return;
+        };
 
         Toolbox._moveSelector();
         
@@ -89,6 +111,7 @@ Toolbox.initLassoEventListeners = () => {
 
         if (THOTH.activeLayer === undefined) {
             THOTH.log("No selected layer!");
+            el.style.cursor = 'not-allowed';
             return;
         };
         Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
@@ -160,6 +183,7 @@ Toolbox.initSelector = () => {
     THOTH._scene.add(Toolbox.selectorMesh);
 };
 
+
 // update functions
 
 Toolbox._updateScreenMove = (e) => {
@@ -189,6 +213,7 @@ Toolbox._moveSelector = () => {
     Toolbox.selectorMesh.visible = true;
     Toolbox.selectorMesh.position.copy(THOTH._queryData.p);
 };
+
 
 // Selection
 
@@ -268,20 +293,21 @@ Toolbox.delFacesFromSelection = (newFaces, selection) => {
     return selection;
 };
 
+
 // Brush
 
 Toolbox._brushActive = () => {
     const newFaces = Toolbox._selectMultipleFaces();
-    THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
-    THOTH.clearHighlights();
-    THOTH.highlightSelections();
+    const highlightColor = THOTH.Utils.hex2rgb(THOTH.activeLayer.highlightColor);
+    Toolbox.tempSelection = Toolbox.addFacesToSelection(newFaces, Toolbox.tempSelection);
+    THOTH.highlightSelection(newFaces, highlightColor);
 };
 
 Toolbox._eraserActive = () => {
     const newFaces = Toolbox._selectMultipleFaces();
-    THOTH.activeLayer.selection = Toolbox.delFacesFromSelection(newFaces, THOTH.activeLayer.selection);
-    THOTH.clearHighlights();
-    THOTH.highlightSelections();
+    const highlightColor = THOTH.Utils.hex2rgb('#ffffff');
+    Toolbox.tempSelection = Toolbox.delFacesFromSelection(newFaces, Toolbox.tempSelection);
+    THOTH.highlightSelection(newFaces, highlightColor);
 };
 
 Toolbox.increaseSelectorSize = () => {
@@ -301,6 +327,7 @@ Toolbox.setSelectorSize = (size) => {
     Toolbox.selectorRadius = Toolbox._computeRadius(Toolbox.selectorSize);
     Toolbox.selectorMesh.scale.setScalar(Toolbox.selectorRadius);
 };
+
 
 // Lasso
 
@@ -375,8 +402,7 @@ Toolbox._endLassoAdd = () => {
     
     if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
-        THOTH.clearHighlights();
-        THOTH.highlightSelections();
+        THOTH.updateVisibility();
     }
     
     Toolbox._cleanupLasso();
@@ -388,8 +414,7 @@ Toolbox._endLassoSub = () => {
 
     if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.delFacesFromSelection(newFaces, THOTH.activeLayer.selection);
-        THOTH.clearHighlights();
-        THOTH.highlightSelections();
+        THOTH.updateVisibility();
     }
 
     Toolbox._cleanupLasso();
@@ -516,6 +541,7 @@ Toolbox._isPointInPolygon = (point, polygon) => {
     return inside;
 };
 
+
 // Tool activation
 
 Toolbox.activate = () => Toolbox.enabled = true;
@@ -544,4 +570,4 @@ Toolbox.deactivateLasso = () => Toolbox.lassoEnabled = false;
 
 
 // IDEA: Do frustum culling for only a small area around the lasso selection
-// TODO: Discard unused variables (tempSelection) after tool usage
+// IDEA: Create alternative to highlight all faces that only iterates over new faces

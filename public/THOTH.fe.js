@@ -7,9 +7,6 @@
 
 let FE = {};
 
-/* 
-Init
-===========================================================*/
 
 FE.init = () => {
     FE.layerButtons = new Map();
@@ -104,6 +101,7 @@ FE.setupUI =() => {
     FE.setupExportPane();
 };
 
+
 // Toolbox
 
 FE.setupToolboxPane = () => {
@@ -178,6 +176,7 @@ FE.updateToolRadiusUI = () => {
     }
 };
 
+
 // Layers
 
 FE.setupLayerPane = () => {
@@ -206,6 +205,7 @@ FE.addToLayers = (id) => {
         FE.displayDetails();
     });
 };
+
 
 // Details
 
@@ -261,6 +261,7 @@ FE.displayDetails = () => {
     })
 };
 
+
 // Export
 
 FE.setupExportPane = () => {
@@ -272,6 +273,7 @@ FE.setupExportPane = () => {
         THOTH.Scene.exportAnnotations();
     });
 };
+
 
 // Popups
 
@@ -427,3 +429,7 @@ FE._createPopupStd = (id) => {
 
     return htmlcontent;
 };
+
+
+// Idea: Tool-specific cursors
+// Idea: Minor popup when selection is invalid

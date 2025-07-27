@@ -5,6 +5,7 @@
 
 ===========================================================*/
 
+
 let Scene = {};
 
 
@@ -12,6 +13,8 @@ Scene.init = () => {
     Scene.sid = Scene.getSceneID();
 };
 
+
+// Util
 
 Scene.getSceneID = (sid) => {
     if (!sid) {
@@ -25,6 +28,8 @@ Scene.getSceneID = (sid) => {
     return sid;
 };
 
+
+// Import/export
 
 Scene.exportAnnotations = () => {
     THOTH.log("Exporting annotations...");
@@ -54,7 +59,6 @@ Scene.annotations2Object = (annotationArray) => {
     return annotationObject;
 };
 
-
 Scene.importLayers = () => {
     THOTH.log("Importing scene layers");
 
@@ -67,7 +71,6 @@ Scene.importLayers = () => {
         THOTH.layers.set(layer.id, layer);
     }
 };
-
 
 // Unnecessary on init with currData
 Scene.importAnnotationsfromJSON = async (sid, onSuccess) => {

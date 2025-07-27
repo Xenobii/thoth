@@ -8,10 +8,10 @@ author: steliosalvanos@gmail.com
 let THOTH = new ATON.Flare("thoth");
 
 THOTH.FE      = FE;
-THOTH.Mat     = Mat;
 THOTH.Toolbox = Toolbox;
 THOTH.Utils   = Utils;
 THOTH.Scene   = Scene;
+
 
 // Layer class
 
@@ -69,9 +69,6 @@ THOTH.setup = async () => {
     // ATON Overhead
     await THOTH._parseAtonElements();
 
-    // Mat
-    THOTH.Mat.init();
-    
     // Scene
     THOTH.Scene.init();
     THOTH.initRC();
@@ -79,16 +76,18 @@ THOTH.setup = async () => {
     // Layers
     THOTH.layers = new Map();
     THOTH.Scene.importLayers();
-    THOTH.updateVisibility();
     
     // Toolbox
     THOTH.Toolbox.init();
     
     // Front End
     THOTH.FE.init();
-
+    
     // Event listeners
     THOTH.initEventListeners();
+
+    // Display
+    THOTH.updateVisibility();
 };
 
 THOTH.update = () => {
@@ -203,6 +202,8 @@ THOTH.initEventListeners = () => {
     }, false);
     
     el.addEventListener('mouseup', (e) => {
+        el.style.cursor = 'default';
+
         if (e.button === 0) THOTH._bLeftMouseDown = false;
         if (e.button === 2) THOTH._bRightMouseDown = false;
     }, false);
@@ -211,46 +212,51 @@ THOTH.initEventListeners = () => {
 
 // Visualization
 
-THOTH.highlightSelections = () => {
+THOTH.highlightSelection = (selection, highlightColor) => {
+    if (selection === undefined || selection.size === 0) return;
+
+    const colorAttr = THOTH.mainMesh.geometry.attributes.color;
+    const indexAttr = THOTH.mainMesh.geometry.index;
+
+    const colors = colorAttr.array;
+    const stride = colorAttr.itemSize;
+    const r = highlightColor.r, g = highlightColor.g, b = highlightColor.b;
+
+    const writeVertex = (base) => {
+        colors[base    ] = r;
+        colors[base + 1] = g;
+        colors[base + 2] = b;
+    }
+
+    if (indexAttr) {
+        const indices = indexAttr.array;
+        for (const face of selection){
+            writeVertex(indices[face * 3    ] * stride);
+            writeVertex(indices[face * 3 + 1] * stride);
+            writeVertex(indices[face * 3 + 2] * stride);
+        }
+    } else {
+        for (const face of selection){
+            const faceStart = face * 3 * stride;
+            writeVertex(faceStart);
+            writeVertex(faceStart + stride);
+            writeVertex(faceStart + 2 * stride);
+        }
+    }
+
+    colorAttr.needsUpdate = true;
+    return;
+};
+
+THOTH.highlightAllLayers = () => {
+    // All layers
     THOTH.layers.forEach((layer, id) => {
         if (!layer.visible) return;
 
         const selection      = layer.selection;
         const highlightColor = THOTH.Utils.hex2rgb(layer.highlightColor);
-        
-        if (selection === undefined || selection.size === 0) return;
 
-        const colorAttr = THOTH.mainMesh.geometry.attributes.color;
-        const indexAttr = THOTH.mainMesh.geometry.index;
-
-        const colors = colorAttr.array;
-        const stride = colorAttr.itemSize;
-        const r = highlightColor.r, g = highlightColor.g, b = highlightColor.b;
-
-        const writeVertex = (base) => {
-            colors[base    ] = r;
-            colors[base + 1] = g;
-            colors[base + 2] = b;
-        }
-
-        if (indexAttr) {
-            const indices = indexAttr.array;
-            for (const face of selection){
-                writeVertex(indices[face * 3    ] * stride);
-                writeVertex(indices[face * 3 + 1] * stride);
-                writeVertex(indices[face * 3 + 2] * stride);
-            }
-        } else {
-            for (const face of selection){
-                const faceStart = face * 3 * stride;
-                writeVertex(faceStart);
-                writeVertex(faceStart + stride);
-                writeVertex(faceStart + 2 * stride);
-            }
-        }
-
-        colorAttr.needsUpdate = true;
-        return;
+        THOTH.highlightSelection(selection, highlightColor);
     });
 };
 
@@ -267,36 +273,7 @@ THOTH.clearHighlights = () => {
 
 THOTH.updateVisibility = () => {
     THOTH.clearHighlights();
-    THOTH.highlightSelections();
-};
-
-
-// Selection management
-
-THOTH.addFacesToSelection = (newFaces, selection) => {
-    if (newFaces === undefined || !newFaces.length) return;
-        
-    const newFacesSet = new Set(newFaces);
-    newFacesSet.forEach(f => {
-        if (!selection.has(f)) {
-            selection.add(f);
-        }
-    });
-
-    return selection;
-};
-
-THOTH.addFacesToSelection = (newFaces, selection) => {
-    if (newFaces === undefined || !newFaces.length) return;
-        
-    const newFacesSet = new Set(newFaces);
-    newFacesSet.forEach(f => {
-        if (!selection.has(f)) {
-            selection.delete(f);
-        }
-    });
-
-    return selection;
+    THOTH.highlightAllLayers();
 };
 
 
@@ -356,6 +333,7 @@ THOTH.editLayerName = (id) => {
     layerBtn.title = layer.name;
 };
 
-// TODO: Remove Mat, geomteryHelpers and Utils
+
 // TODO: Modify import/export
-// TODO: Add block cursor on warning
+// TODO: Remove all unnecessary ATON eventListeners on startup
+// TODO: Make collaborative

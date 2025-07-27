@@ -8,7 +8,6 @@
             "THOTH.toolbox.js",
             "THOTH.fe.js",
             "THOTH.scene.js",
-            "THOTH.mat.js",
             "THOTH.js"
         ]
     }
