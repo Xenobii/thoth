@@ -13,8 +13,9 @@ let Toolbox = {};
 Toolbox.init = () => {
     Toolbox._bInitialized = false;
 
-    // Adjustble params
-    Toolbox.normalThreshold = 0;
+    // Adjustable params
+    Toolbox.lassoPrecision = 0.1;  // between 0.1 and 1
+    Toolbox.normalThreshold = 0; // between -1 and 1
     Toolbox.selectObstructedFaces = false;
 
     Toolbox.enabled = true;
@@ -391,7 +392,14 @@ Toolbox._startLasso = () => {
 Toolbox._updateLasso = () => {
     if (!Toolbox._lassoIsActive) return;
     
-    Toolbox.lassoPoints.push(Toolbox._pixelPointerCoords);
+    const previousPos = Toolbox.lassoPoints[Toolbox.lassoPoints.length - 1];
+    const currentPos  = Toolbox._pixelPointerCoords;
+    const dist = Toolbox._poitDistance(previousPos, currentPos);
+    
+    // Reduce oversampling
+    if (dist < 1 / Toolbox.lassoPrecision) return;
+        
+    Toolbox.lassoPoints.push(currentPos);
     
     Toolbox.lassoCtx.lineTo(Toolbox._pixelPointerCoords.x, Toolbox._pixelPointerCoords.y);
     Toolbox.lassoCtx.stroke();
@@ -424,6 +432,7 @@ Toolbox._endLassoSub = () => {
 Toolbox._processLassoSelection = () => {
     if (!Toolbox.lassoPoints || Toolbox.lassoPoints.length < 3) return;
 
+    const mesh     = THOTH.mainMesh;
     const geometry = THOTH.mainMesh.geometry;
     const camera   = THOTH._camera;
     const width    = Toolbox.canvas.width;
@@ -479,6 +488,7 @@ Toolbox._processLassoSelection = () => {
         n3.fromBufferAttribute(normAttr, c);
 
         centroid.copy(v1).add(v2).add(v3).divideScalar(3);
+        mesh.localToWorld(centroid);
         
         // Filter faces out of camera frustum
         
@@ -534,11 +544,19 @@ Toolbox._isPointInPolygon = (point, polygon) => {
         const xj = polygon[j].x, yj = polygon[j].y;
 
         const intersect = ((yi > y) !== (yj > y)) &&
-            (x < (xj - xi) * (y - yi) / (yj - yi + 1e-10) + xi);
+            (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
 
         if (intersect) inside = !inside;
     }
     return inside;
+};
+
+Toolbox._poitDistance = (pos1, pos2) => {
+    const dist = Math.sqrt(
+        Math.pow(pos1.x - pos2.x, 2) + 
+        Math.pow(pos1.y - pos2.y, 2)
+    );
+    return dist;
 };
 
 
