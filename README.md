@@ -19,5 +19,5 @@ Designed as part of the [TEXTaiLES](https://textailes-eccch.eu/) program.
 # TODO List
 
 - [x] Make this work for now
-- [ ] Debug collaborative
+- [x] Debug collaborative
 - [ ] Lasso hyper-optimization with lasso selection frustum

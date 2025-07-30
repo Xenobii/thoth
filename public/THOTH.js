@@ -348,7 +348,5 @@ THOTH.syncScene = (layers) => {
 };
 
 
-// TODO: Modify import/export
+// TODO: History
 // TODO: Remove all unnecessary ATON eventListeners on startup
-// TODO: Make collaborative visible irt
-// TODO: Resolve multi-user changes on join

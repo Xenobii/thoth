@@ -114,7 +114,6 @@ Scene.exportLayers = () => {
     });
 };
 
-
 Scene.importLayers = () => {
     THOTH.log("Importing scene layers");
 
