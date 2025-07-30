@@ -11,6 +11,69 @@ let Scene = {};
 
 Scene.init = () => {
     Scene.sid = Scene.getSceneID();
+
+    Scene.importLayers();
+    Scene.initEventListeners();
+};
+
+Scene.initEventListeners = () => {
+    // Local
+    THOTH.on("createLayer", (id) => {
+        THOTH.createLayer(id);
+    });
+
+    THOTH.on("deleteLayer", (id) => {
+        THOTH.deleteLayer(id);
+    });
+
+    THOTH.on("editLayer", (l) => {
+        const id    = l.id;
+        const attr  = l.attr;
+        const value = l.value;
+        THOTH.editLayer(id, attr, value);
+    });
+
+    // Photon
+    
+    // On new user join
+    THOTH.onPhoton("readyToSync", () => {
+        const layers = Scene.currData.layers;
+
+        if (layers !== undefined) {
+            Object.values(layers).forEach((layer) => {
+                layer.selection = Array.from(layer.selection);
+            });
+        }
+
+        THOTH.firePhoton("syncScene", layers);
+    });
+    
+    THOTH.onPhoton("syncScene", (layers) => {
+        THOTH.syncScene(layers);
+    });
+
+    THOTH.onPhoton("createLayer", (id) => {
+        THOTH.createLayer(id);
+    });
+
+    THOTH.onPhoton("deleteLayer", (id) => {
+        THOTH.deleteLayer(id);
+    });
+
+    THOTH.onPhoton("editLayer", (l) => {
+        const id    = l.id;
+        const attr  = l.attr;
+        const value = l.value;
+        THOTH.editLayer(id, attr, value);
+    });
+
+    THOTH.onPhoton("editSelection", (l) => {
+        const id        = l.id;
+        const selection = new Set(l.selection)
+        THOTH.editLayer(id, "selection", selection);
+        THOTH.updateVisibility();
+    });
+
 };
 
 
@@ -31,78 +94,36 @@ Scene.getSceneID = (sid) => {
 
 // Import/export
 
-Scene.exportAnnotations = () => {
+Scene.exportLayers = () => {
     THOTH.log("Exporting annotations...");
 
-    let A = Scene.annotations2Object(THOTH.annotations);
+    let A = {};
+    A.layers = Scene.currData.layers;
+
+    Object.values(Scene.currData.layers).forEach((layer) => {
+        layer.selection = Array.from(layer.selection);
+    });
     
     // Just remove all annotation objects and ADD them again with changes
-    
+    THOTH.Scene.patch(A, THOTH.Scene.MODE_DEL, () => {
+    });
+
     // Patch changes
-    THOTH.patch(A, ATON.SceneHub.MODE_ADD, () => {
+    THOTH.Scene.patch(A, THOTH.Scene.MODE_ADD, () => {
         THOTH.log("Success!");
     });
 };
 
-Scene.annotations2Object = (annotationArray) => {
-    const annotationObject = {};
-    annotationObject.annotations = {};
-
-    for (let i=0; i<annotationArray.length; i++) {
-        const name = annotationArray[i].name;
-        const faceIndices = Array.from(annotationArray[i].faceIndices);
-
-        // Add to annotation object
-        annotationObject.annotations[name] = annotationArray[i];
-        annotationObject.annotations[name].faceIndices = faceIndices;
-    };
-    return annotationObject;
-};
 
 Scene.importLayers = () => {
     THOTH.log("Importing scene layers");
 
-    layerData = THOTH.currData.layers;
+    const layers = Scene.currData.layers;
+    if (layers === undefined) return;
 
-    if (layerData === undefined) return;
+    Object.values(layers).forEach((layer) => {
+        if (layer.selection === undefined) return;
 
-    for (const layer of layerData) {
-        THOTH.log(layer)
-        THOTH.layers.set(layer.id, layer);
-    }
-};
-
-// Unnecessary on init with currData
-Scene.importAnnotationsfromJSON = async (sid, onSuccess) => {
-    if (sid === undefined) return;
-
-    THOTH.log("Importing annotations from scene: "+sid);
-    
-    const reqpath = ATON.PATH_RESTAPI2+"scenes/"+sid;
-
-    return new Promise((resolve, reject) => {
-        THOTH.Utils.getJSON(reqpath, (data) => {
-            // Parse JSON and apply to scene
-            Scene.parseJSON(data);
-    
-            if (onSuccess) onSuccess();
-            resolve();
-        });
-    });
-};
-
-Scene.parseJSON = (data) => {
-    if (data.annotations === undefined) return;
-
-    // Convert annotations object to array and parse
-    THOTH.annotations = Object.values(data.annotations);
-
-    // Iterate through the array
-    Object.keys(THOTH.annotations).forEach(i => {
-        // Convert faceIndices to Sets
-        THOTH.annotations[i].faceIndices = new Set(THOTH.annotations[i].faceIndices);
-
-        // Create annotation button for each
-        THOTH.FE.createNewAnnotationUI(THOTH.annotations[i]);
+        layer.selection = new Set(layer.selection);
     });
 };

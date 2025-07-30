@@ -25,6 +25,29 @@ Utils.hex2rgb = (hex) => {
     return {r, g, b};
 };
 
+Utils.getHighlightColor = (id) => {
+    // Create a rotating color for clarity
+    const r = parseInt(255 * Math.sin(id * Math.PI/4)/2 + 128);
+    const g = parseInt(255 * Math.sin(id * Math.PI/4 + 2* Math.PI/3)/2 + 128);
+    const b = parseInt(255 * Math.sin(id * Math.PI/4 - 2* Math.PI/3)/2 + 128);
+
+    const color = THOTH.Utils.rgb2hex(r, g, b);
+
+    return color;
+};
+
+Utils.getFirstUnusedKey = (obj) => {
+    const keys = Object.keys(obj).map(Number); // Convert to numbers
+    const keySet = new Set(keys);
+
+    let id = 0;
+    while (keySet.has(id)) {
+        id++;
+    }
+
+    return id;
+};
+
 Utils.getJSON = (jsonurl, onLoad)=>{
     fetch(jsonurl, {
         method: 'GET',

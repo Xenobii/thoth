@@ -121,6 +121,7 @@ FE.setupToolboxPane = () => {
     btnEraser.on('click', () => {
         THOTH.Toolbox.activateBrush();
         ATON.Nav.setUserControl(false);
+        console.log(THOTH.Scene.currData.layers)
     });
 
     // Lasso
@@ -185,12 +186,22 @@ FE.setupLayerPane = () => {
     });
 
     newLayerBtn.on('click', () => {
-        THOTH.createNewLayer();
+        THOTH.fire("createLayer");
+        THOTH.firePhoton("createLayer");
     });
+
+    // Import previously saved layers
+    const layers = Scene.currData.layers;
+    if (layers === undefined) return;
+
+    Object.values(layers).forEach((layer) => {
+        THOTH.FE.addToLayers(layer.id);
+    });
+
 };
 
 FE.addToLayers = (id) => {
-    const layer    = THOTH.layers.get(id); 
+    const layer    = THOTH.Scene.currData.layers[id]; 
     const layerBtn = FE.layerPane.addButton({
         title: layer.name,
     });
@@ -245,12 +256,16 @@ FE.displayDetails = () => {
 
     // Event listeners
     nameAttr.on('change', () => {
-        THOTH.editLayerName(activeLayer.id);
+        // THOTH.editLayerName(activeLayer.id);
     });
     visibleAttr.on('change', () => {
         THOTH.updateVisibility();
     });
     colorAttr.on('change', () => {
+        const id = activeLayer.id;
+        const highlightColor = activeLayer.highlightColor;
+        THOTH.fire("editLayer", {id:id, attr:"highlightColor", value:highlightColor});
+        THOTH.firePhoton("editLayer", {id:id, attr:"highlightColor", value:highlightColor});
         THOTH.updateVisibility();
     });
     deleteBtn.on('click', () => {
@@ -270,7 +285,7 @@ FE.setupExportPane = () => {
     });
 
     exportAnnotationBtn.on('click', () => {
-        THOTH.Scene.exportAnnotations();
+        THOTH.Scene.exportLayers();
     });
 };
 
@@ -342,7 +357,7 @@ FE.popupClose = () => {
 };
 
 FE.popupConfirmDelete = (id) => {
-    const layer = THOTH.layers.get(id);
+    const layer = THOTH.Scene.currData.layers[id];
 
     let head = "Delete "+ layer.name + "?";
 
@@ -354,7 +369,8 @@ FE.popupConfirmDelete = (id) => {
     FE.popupShow(htmlcontent);
 
     $("#btnOK").click(() => {
-        THOTH.deleteLayer(id);
+        THOTH.fire("deleteLayer", (id));
+        THOTH.firePhoton("deleteLayer", (id));
         FE.popupClose();
     });
     $("#btnCancel").click(() => {

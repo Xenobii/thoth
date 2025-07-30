@@ -48,15 +48,14 @@ Toolbox.initBrushEventListeners = () => {
         if (!Toolbox.brushEnabled) return;
 
         if (THOTH.activeLayer === undefined) {
-
             console.log("No layer selected!");
             el.style.cursor = 'not-allowed';
             return;
         };
 
-        if (THOTH._queryData === undefined) return;
-
         Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
+        
+        if (THOTH._queryData === undefined) return;
         
         if (e.button === 0) Toolbox._brushActive();
         if (e.button === 2) Toolbox._eraserActive();
@@ -75,7 +74,10 @@ Toolbox.initBrushEventListeners = () => {
             THOTH.activeLayer.selection = new Set(Toolbox.tempSelection);
             delete Toolbox.tempSelection;
             THOTH.updateVisibility();
-            // history logic
+            THOTH.firePhoton("editSelection", {
+                id: THOTH.activeLayer.id,
+                selection: Array.from(THOTH.activeLayer.selection)
+            });
         };
     }, false);
 
@@ -411,6 +413,10 @@ Toolbox._endLassoAdd = () => {
     if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
         THOTH.updateVisibility();
+        THOTH.firePhoton("editSelection", {
+            id: THOTH.activeLayer.id,
+            selection: Array.from(THOTH.activeLayer.selection)
+        });
     }
     
     Toolbox._cleanupLasso();
@@ -423,6 +429,10 @@ Toolbox._endLassoSub = () => {
     if (newFaces !== undefined && newFaces.length !== 0) {
         THOTH.activeLayer.selection = Toolbox.delFacesFromSelection(newFaces, THOTH.activeLayer.selection);
         THOTH.updateVisibility();
+        THOTH.firePhoton("editSelection", {
+            id: THOTH.activeLayer.id,
+            selection: Array.from(THOTH.activeLayer.selection)
+        });
     }
 
     Toolbox._cleanupLasso();

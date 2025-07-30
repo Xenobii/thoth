@@ -13,46 +13,6 @@ THOTH.Utils   = Utils;
 THOTH.Scene   = Scene;
 
 
-// Layer class
-
-class Layer {
-    constructor(id) {
-        this.id = id;
-        this.name = "Layer " + id;
-        this.description = " ";
-        this.selection = new Set();
-        this.visible = true;
-        this.highlightColor = this.getHighlightColor(id);
-    }
-
-    getHighlightColor(id) {
-        // Create a rotating color for clarity
-        const r = parseInt(255 * Math.sin(id * Math.PI/4)/2 + 128);
-        const g = parseInt(255 * Math.sin(id * Math.PI/4 + 2* Math.PI/3)/2 + 128);
-        const b = parseInt(255 * Math.sin(id * Math.PI/4 - 2* Math.PI/3)/2 + 128);
-
-        const color = THOTH.Utils.rgb2hex(r, g, b);
-
-        return color;
-    }
-
-    toJSON() {
-        return {
-            id: this.id,
-            name: this.name,
-            description: this.description,
-            selection: Array.from(this.selection),
-            visible: this.visible,
-            highlightColor: this.highlightColor
-        };
-    }
-
-    static fromJSON(json) {
-        // logic here
-    }
-};
-
-
 // Flare setup
 
 THOTH.setup = async () => {
@@ -61,21 +21,26 @@ THOTH.setup = async () => {
     THOTH._bPauseQuery = false;
     THOTH._bLoading    = true;
     THOTH._bAtonReady  = false;
+    THOTH._bSynced     = false;
 
     ATON.on("AllNodeRequestsCompleted", () => {
         THOTH._bAtonReady = true;
     });
-
+    
     // ATON Overhead
     await THOTH._parseAtonElements();
-
+    
     // Scene
     THOTH.Scene.init();
     THOTH.initRC();
-
-    // Layers
-    THOTH.layers = new Map();
-    THOTH.Scene.importLayers();
+    
+    // Photon sync
+    if (THOTH._numUsers > 1) {
+        THOTH.firePhoton("readyToSync");
+        while (!THOTH._bSynced) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        };
+    }
     
     // Toolbox
     THOTH.Toolbox.init();
@@ -85,9 +50,11 @@ THOTH.setup = async () => {
     
     // Event listeners
     THOTH.initEventListeners();
-
+    
     // Display
     THOTH.updateVisibility();
+
+    THOTH.log("THOTH ready!");
 };
 
 THOTH.update = () => {
@@ -122,16 +89,15 @@ THOTH._parseAtonElements = async () => {
     THOTH._queryData = ATON._queryDataScene;
     THOTH._renderer  = ATON._renderer;
     THOTH._rcScene   = ATON._rcScene;
+    THOTH.RCLayer    = ATON.NTYPES.SCENE;
 
     // Scene
-    THOTH.MODE_ADD = 0;
-    THOTH.MODE_DEL = 1;
-    
-    THOTH.RCLayer  = ATON.NTYPES.SCENE
+    THOTH.Scene.MODE_ADD = 0;
+    THOTH.Scene.MODE_DEL = 1;
 
-    THOTH.patch    = ATON.SceneHub.patch;
-    THOTH.load     = ATON.SceneHub.load;
-    THOTH.currData = ATON.SceneHub.currData;
+    THOTH.Scene.patch    = ATON.SceneHub.patch;
+    THOTH.Scene.load     = ATON.SceneHub.load;
+    THOTH.Scene.currData = ATON.SceneHub.currData;
 
     // EventHub
     THOTH.on   = ATON.on;
@@ -141,7 +107,9 @@ THOTH._parseAtonElements = async () => {
     THOTH._camera   = ATON.Nav._camera;
 
     // Photon
-    THOTH.photonFire = ATON.Photon.fire;
+    THOTH.firePhoton = ATON.Photon.fire;
+    THOTH.onPhoton   = ATON.Photon.on;
+    THOTH._numUsers  = ATON.Photon._numUsers;
 
     // Utils
     THOTH._mSelectorSphere = ATON.SUI._mSelectorSphere;
@@ -207,6 +175,7 @@ THOTH.initEventListeners = () => {
         if (e.button === 0) THOTH._bLeftMouseDown = false;
         if (e.button === 2) THOTH._bRightMouseDown = false;
     }, false);
+
 };
 
 
@@ -250,7 +219,10 @@ THOTH.highlightSelection = (selection, highlightColor) => {
 
 THOTH.highlightAllLayers = () => {
     // All layers
-    THOTH.layers.forEach((layer, id) => {
+    const layers = THOTH.Scene.currData.layers;
+    if (layers === undefined) return;
+
+    Object.values(layers).forEach((layer) => {
         if (!layer.visible) return;
 
         const selection      = layer.selection;
@@ -274,49 +246,71 @@ THOTH.clearHighlights = () => {
 THOTH.updateVisibility = () => {
     THOTH.clearHighlights();
     THOTH.highlightAllLayers();
+    
+    if (THOTH.activeLayer === undefined) return;
+
+    const layer = THOTH.activeLayer;
+    const mode  = THOTH.MODE_ADD;
+
+    // update on photon
 };
 
 
 // Layers
 
-THOTH.createNewLayer = () => {
-    // Util function for retrieving the first unused id in the Layers Map for initialization
-    function getFirstUnusedKey(map) {
-        let i = 0;
-        while (map.has(i)) {
-            i++;
-        }
-        return i;
+THOTH.createLayer = (id) => {
+    // Create layers if not present
+    if (!THOTH.Scene.currData.layers) {
+        THOTH.Scene.currData.layers = {};
     };
 
-    const id = getFirstUnusedKey(THOTH.layers)
-    const newLayer = new Layer(id);
+    // Get first unused id
+    if (id === undefined) {
+        id = THOTH.Utils.getFirstUnusedKey(THOTH.Scene.currData.layers);
+    };
 
-    THOTH.layers.set(id, newLayer);
+    // Resolve remote id conflict
+    if (THOTH.Scene.currData.layers[id] !== undefined) {
+        alert("Id conflict");
+        return;
+    };
+
+    let layer = {
+        id: id,
+        name: "Layer " + id,
+        description: " ",
+        selection: new Set(),
+        visible: true,
+        highlightColor: THOTH.Utils.getHighlightColor(id)
+    };
     
-    THOTH.log("Created new layer: " + newLayer.name);
-
+    THOTH.Scene.currData.layers[id] = layer;
+    
     // Create layer folder 
     THOTH.FE.addToLayers(id);
+
+    THOTH.log("Created new layer: " + layer.name);
 };
 
 THOTH.deleteLayer = (id) => {
-    const layer       = THOTH.layers.get(id);
-    const layerButton = THOTH.FE.layerButtons.get(id);
+    if (id === undefined) return;
 
     // If layer is activeLayer, dispose of details
-    if (layer === THOTH.activeLayer) {
+    if (id === THOTH.activeLayer.id) {
         if (FE.detailTabs) FE.detailTabs.dispose();
     }
+
+    let layers = THOTH.Scene.currData.layers;
+    let layer  = layers[id];
+    const layerButton = THOTH.FE.layerButtons.get(id);
 
     // Delete layer button
     layerButton.dispose();
     THOTH.FE.layerButtons.delete(id);
     
     // Delete layer
-    THOTH.layers.delete(id);
+    delete Scene.currData.layers[id];
     THOTH.activeLayer = undefined;
-    
     
     // Update visuals
     THOTH.updateVisibility();
@@ -324,16 +318,37 @@ THOTH.deleteLayer = (id) => {
     THOTH.log("Deleted layer: " + layer.name);
 };
 
-THOTH.editLayerName = (id) => {
-    // Edit layer
-    const layer = THOTH.layers.get(id);
+THOTH.editLayer = (id, attr, value) => {
+    if (id === undefined || attr === undefined) return;
+    
+    const layer = THOTH.Scene.currData.layers?.[id];
+    if (!layer) return;
 
-    // Edit buttons
-    const layerBtn = THOTH.FE.layerButtons.get(id);
-    layerBtn.title = layer.name;
+    if (value === undefined) value = layer[attr];
+
+    // Edit layer
+    layer[attr] = value;
+
+    // Edit buttons accordingly (later)
+};
+
+
+// Photon
+
+THOTH.syncScene = (layers) => {
+    THOTH.Scene.currData.layers = layers;
+
+    if (layers !== undefined) {
+        Object.values(Scene.currData.layers).forEach((layer) => {
+            layer.selection = new Set(layer.selection);
+        });
+    }
+
+    THOTH._bSynced = true;
 };
 
 
 // TODO: Modify import/export
 // TODO: Remove all unnecessary ATON eventListeners on startup
-// TODO: Make collaborative
+// TODO: Make collaborative visible irt
+// TODO: Resolve multi-user changes on join
