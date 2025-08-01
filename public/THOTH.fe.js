@@ -121,7 +121,6 @@ FE.setupToolboxPane = () => {
     btnEraser.on('click', () => {
         THOTH.Toolbox.activateBrush();
         ATON.Nav.setUserControl(false);
-        console.log(THOTH.Scene.currData.layers)
     });
 
     // Lasso

@@ -187,7 +187,7 @@ Toolbox.initSelector = () => {
 };
 
 
-// update functions
+// Update functions
 
 Toolbox._updateScreenMove = (e) => {
     if (!Toolbox.enabled) return;
@@ -598,4 +598,3 @@ Toolbox.deactivateLasso = () => Toolbox.lassoEnabled = false;
 
 
 // IDEA: Do frustum culling for only a small area around the lasso selection
-// IDEA: Create alternative to highlight all faces that only iterates over new faces
