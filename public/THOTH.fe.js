@@ -185,8 +185,22 @@ FE.setupLayerPane = () => {
     });
 
     newLayerBtn.on('click', () => {
-        THOTH.fire("createLayer");
-        THOTH.firePhoton("createLayer");
+        // Create layers if not present
+        if (!THOTH.Scene.currData.layers) {
+            THOTH.Scene.currData.layers = {};
+        };
+
+        // Get first unused id
+        const id = THOTH.Utils.getFirstUnusedKey(THOTH.Scene.currData.layers);
+
+        // Add to history
+        THOTH.HIS.pushAction(
+            THOTH.HIS.ACTIONS.CREATE_LAYER,
+            id
+        );
+        
+        THOTH.fire("createLayer", (id));
+        THOTH.firePhoton("createLayer", (id));
     });
 
     // Import previously saved layers
@@ -194,6 +208,8 @@ FE.setupLayerPane = () => {
     if (layers === undefined) return;
 
     Object.values(layers).forEach((layer) => {
+        if (layer.trash) return;
+
         THOTH.FE.addToLayers(layer.id);
     });
 
@@ -368,8 +384,16 @@ FE.popupConfirmDelete = (id) => {
     FE.popupShow(htmlcontent);
 
     $("#btnOK").click(() => {
+        // Add to History
+        THOTH.HIS.pushAction(
+            THOTH.HIS.ACTIONS.DELETE_LAYER,
+            id
+        );
+
+        // Fire events
         THOTH.fire("deleteLayer", (id));
         THOTH.firePhoton("deleteLayer", (id));
+        
         FE.popupClose();
     });
     $("#btnCancel").click(() => {

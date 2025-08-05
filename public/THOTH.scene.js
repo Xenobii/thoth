@@ -17,7 +17,7 @@ Scene.init = () => {
 };
 
 Scene.initEventListeners = () => {
-    // Local
+    // Local Actions
     THOTH.on("createLayer", (id) => {
         THOTH.createLayer(id);
     });
@@ -31,6 +31,26 @@ Scene.initEventListeners = () => {
         const attr  = l.attr;
         const value = l.value;
         THOTH.editLayer(id, attr, value);
+    });
+
+    THOTH.on("addToSelection", (l) => {
+        const id    = l.id;
+        const faces = l.faces;
+        const layer = THOTH.Scene.currData.layers[id];
+        const selection = THOTH.Toolbox.addFacesToSelection(faces, layer.selection);
+        
+        THOTH.editLayer(id, "selection", selection);
+        THOTH.updateVisibility();
+    });
+
+    THOTH.on("delFromSelection", (l) => {
+        const id    = l.id;
+        const faces = l.faces;
+        const layer = THOTH.Scene.currData.layers[id];
+        const selection = THOTH.Toolbox.delFacesFromSelection(faces, layer.selection);
+
+        THOTH.editLayer(id, "selection", selection);
+        THOTH.updateVisibility();
     });
 
     // Photon
@@ -52,6 +72,7 @@ Scene.initEventListeners = () => {
         THOTH.syncScene(layers);
     });
 
+    // Photon actions
     THOTH.onPhoton("createLayer", (id) => {
         THOTH.createLayer(id);
     });
@@ -65,15 +86,28 @@ Scene.initEventListeners = () => {
         const attr  = l.attr;
         const value = l.value;
         THOTH.editLayer(id, attr, value);
-    });
-
-    THOTH.onPhoton("editSelection", (l) => {
-        const id        = l.id;
-        const selection = new Set(l.selection)
-        THOTH.editLayer(id, "selection", selection);
         THOTH.updateVisibility();
     });
 
+    THOTH.onPhoton("addToSelection", (l) => {
+        const id    = l.id;
+        const faces = l.faces;
+        const layer = THOTH.Scene.currData.layers[id];
+        const selection = THOTH.Toolbox.addFacesToSelection(faces, layer.selection);
+        
+        THOTH.editLayer(id, "selection", selection);
+        THOTH.updateVisibility();    
+    });
+
+    THOTH.onPhoton("delFromSelection", (l) => {
+        const id    = l.id;
+        const faces = l.faces;
+        const layer = THOTH.Scene.currData.layers[id];
+        const selection = THOTH.Toolbox.delFacesFromSelection(faces, layer.selection);
+
+        THOTH.editLayer(id, "selection", selection);
+        THOTH.updateVisibility();
+    });
 };
 
 

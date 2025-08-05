@@ -53,7 +53,8 @@ Toolbox.initBrushEventListeners = () => {
             return;
         };
 
-        Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
+        // Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
+        Toolbox.tempSelection = new Set();
         
         if (THOTH._queryData === undefined) return;
         
@@ -68,19 +69,21 @@ Toolbox.initBrushEventListeners = () => {
             return;
         };
 
-        if (e.button === 0 || e.button === 2) {
+        if (Toolbox.tempSelection === undefined) return;
+        
+        // Left mouse click
+        if (e.button === 0) {
             el.style.cursor = 'default';
-
-            THOTH.activeLayer.selection = new Set(Toolbox.tempSelection);
-            delete Toolbox.tempSelection;
-            THOTH.updateVisibility();
-            THOTH.firePhoton("editSelection", {
-                id: THOTH.activeLayer.id,
-                selection: Array.from(THOTH.activeLayer.selection)
-            });
+            Toolbox._endBrush();
+        };
+        
+        // Right mouse click
+        if (e.button === 2) {
+            el.style.cursor = 'default';
+            Toolbox._endEraser();
         };
     }, false);
-
+    
     el.addEventListener('mousemove', () => {
         if (!Toolbox.brushEnabled) return;
 
@@ -139,13 +142,11 @@ Toolbox.initLassoEventListeners = () => {
         if (e.button === 0) {
             el.style.cursor = 'default';
             Toolbox._endLassoAdd();
-            // history logic
         }
 
         if (e.button === 2) {
             el.style.cursor = 'default';
             Toolbox._endLassoSub();
-            // history logic
         }
     })
 };
@@ -272,28 +273,32 @@ Toolbox._selectMultipleFaces = () => {
 
 Toolbox.addFacesToSelection = (newFaces, selection) => {
     if (newFaces === undefined || !newFaces.length) return;
+    
+    const newSelection = new Set(selection)
+    const newFacesSet  = new Set(newFaces);
         
-    const newFacesSet = new Set(newFaces);
     newFacesSet.forEach(f => {
-        if (!selection.has(f)) {
-            selection.add(f);
+        if (!newSelection.has(f)) {
+            newSelection.add(f);
         }
     });
 
-    return selection;
+    return newSelection;
 };
 
 Toolbox.delFacesFromSelection = (newFaces, selection) => {
     if (newFaces === undefined || !newFaces.length) return;
-        
-    const newFacesSet = new Set(newFaces);
+    
+    const newSelection = new Set(selection);
+    const newFacesSet  = new Set(newFaces);
+
     newFacesSet.forEach(f => {
-        if (selection.has(f)) {
-            selection.delete(f);
+        if (newSelection.has(f)) {
+            newSelection.delete(f);
         }
     });
 
-    return selection;
+    return newSelection;
 };
 
 
@@ -309,8 +314,60 @@ Toolbox._brushActive = () => {
 Toolbox._eraserActive = () => {
     const newFaces = Toolbox._selectMultipleFaces();
     const highlightColor = THOTH.Utils.hex2rgb('#ffffff');
-    Toolbox.tempSelection = Toolbox.delFacesFromSelection(newFaces, Toolbox.tempSelection);
+    Toolbox.tempSelection = Toolbox.addFacesToSelection(newFaces, Toolbox.tempSelection);
     THOTH.highlightSelection(newFaces, highlightColor);
+};
+
+Toolbox._endBrush = () => {
+    const id = THOTH.activeLayer.id;
+
+    // Get only faces that don't already belong to layer
+    const faces = [...Toolbox.tempSelection].filter(f => !THOTH.activeLayer.selection.has(f));
+    
+    // Add to history
+    THOTH.HIS.pushAction(
+        THOTH.HIS.ACTIONS.SELEC_ADD,
+        id,
+        faces
+    );
+    
+    // Update
+    THOTH.fire("addToSelection", {
+        id: id,
+        faces: faces
+    });
+    THOTH.firePhoton("addToSelection", {
+        id: id,
+        faces: faces
+    });
+
+    delete Toolbox.tempSelection;
+};
+
+Toolbox._endEraser = () => {
+    const id = THOTH.activeLayer.id;
+            
+    // Get only faces that already belong to layer
+    const faces = [...Toolbox.tempSelection].filter(f => THOTH.activeLayer.selection.has(f));
+    
+    // Add to history
+    THOTH.HIS.pushAction(
+        THOTH.HIS.ACTIONS.SELEC_DEL,
+        id,
+        faces
+    );
+    
+    // Update
+    THOTH.fire("delFromSelection", {
+        id: id,
+        faces: faces
+    });
+    THOTH.firePhoton("delFromSelection", {
+        id: id,
+        faces: faces
+    });
+
+    delete Toolbox.tempSelection;
 };
 
 Toolbox.increaseSelectorSize = () => {
@@ -396,7 +453,7 @@ Toolbox._updateLasso = () => {
     
     const previousPos = Toolbox.lassoPoints[Toolbox.lassoPoints.length - 1];
     const currentPos  = Toolbox._pixelPointerCoords;
-    const dist = Toolbox._poitDistance(previousPos, currentPos);
+    const dist = Toolbox._pointDistance(previousPos, currentPos);
     
     // Reduce oversampling
     if (dist < 1 / Toolbox.lassoPrecision) return;
@@ -411,11 +468,26 @@ Toolbox._endLassoAdd = () => {
     const newFaces = Toolbox._processLassoSelection();
     
     if (newFaces !== undefined && newFaces.length !== 0) {
-        THOTH.activeLayer.selection = Toolbox.addFacesToSelection(newFaces, THOTH.activeLayer.selection);
-        THOTH.updateVisibility();
-        THOTH.firePhoton("editSelection", {
-            id: THOTH.activeLayer.id,
-            selection: Array.from(THOTH.activeLayer.selection)
+        const id    = THOTH.activeLayer.id;
+        
+        // Get only faces that don't already belong to the layer 
+        const faces = [...newFaces].filter(f => !THOTH.activeLayer.selection.has(f));
+        
+        // Add to history
+        THOTH.HIS.pushAction(
+            THOTH.HIS.ACTIONS.SELEC_ADD,
+            id,
+            faces
+        );
+
+        // Fire events
+        THOTH.fire("addToSelection", {
+            id: id,
+            faces: faces
+        });
+        THOTH.firePhoton("addToSelection", {
+            id: id,
+            faces: faces
         });
     }
     
@@ -425,16 +497,31 @@ Toolbox._endLassoAdd = () => {
 
 Toolbox._endLassoSub = () => {
     const newFaces = Toolbox._processLassoSelection();
-
+    
     if (newFaces !== undefined && newFaces.length !== 0) {
-        THOTH.activeLayer.selection = Toolbox.delFacesFromSelection(newFaces, THOTH.activeLayer.selection);
-        THOTH.updateVisibility();
-        THOTH.firePhoton("editSelection", {
-            id: THOTH.activeLayer.id,
-            selection: Array.from(THOTH.activeLayer.selection)
+        const id    = THOTH.activeLayer.id;
+
+        // Get only faces that already belong to layer
+        const faces = [...newFaces].filter(f => THOTH.activeLayer.selection.has(f));
+        
+        // Add to history
+        THOTH.HIS.pushAction(
+            THOTH.HIS.ACTIONS.SELEC_DEL,
+            id,
+            faces
+        );
+
+        // Fire events
+        THOTH.fire("delFromSelection", {
+            id: id,
+            faces: faces
+        });
+        THOTH.firePhoton("delFromSelection", {
+            id: id,
+            faces: faces
         });
     }
-
+    
     Toolbox._cleanupLasso();
     Toolbox._lassoIsActive = false;
 };
@@ -561,7 +648,7 @@ Toolbox._isPointInPolygon = (point, polygon) => {
     return inside;
 };
 
-Toolbox._poitDistance = (pos1, pos2) => {
+Toolbox._pointDistance = (pos1, pos2) => {
     const dist = Math.sqrt(
         Math.pow(pos1.x - pos2.x, 2) + 
         Math.pow(pos1.y - pos2.y, 2)
@@ -598,3 +685,5 @@ Toolbox.deactivateLasso = () => Toolbox.lassoEnabled = false;
 
 
 // IDEA: Do frustum culling for only a small area around the lasso selection
+// IDEA: Create fast lasso option (the Art3mis way)
+// IDEA: Clear all selection button

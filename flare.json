@@ -5,6 +5,7 @@
         "files": [
             "tweakpane.js",
             "THOTH.utils.js",
+            "THOTH.history.js",
             "THOTH.toolbox.js",
             "THOTH.fe.js",
             "THOTH.scene.js",

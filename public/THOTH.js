@@ -8,6 +8,7 @@ author: steliosalvanos@gmail.com
 let THOTH = new ATON.Flare("thoth");
 
 THOTH.FE      = FE;
+THOTH.HIS     = HIS;
 THOTH.Toolbox = Toolbox;
 THOTH.Utils   = Utils;
 THOTH.Scene   = Scene;
@@ -33,6 +34,9 @@ THOTH.setup = async () => {
     // Scene
     THOTH.Scene.init();
     THOTH.initRC();
+    
+    // History
+    THOTH.HIS.init();
     
     // Photon sync
     if (THOTH._numUsers > 1) {
@@ -223,6 +227,7 @@ THOTH.highlightAllLayers = () => {
     if (layers === undefined) return;
 
     Object.values(layers).forEach((layer) => {
+        if (layer.trash) return;
         if (!layer.visible) return;
 
         const selection      = layer.selection;
@@ -259,32 +264,33 @@ THOTH.updateVisibility = () => {
 // Layers
 
 THOTH.createLayer = (id) => {
-    // Create layers if not present
-    if (!THOTH.Scene.currData.layers) {
-        THOTH.Scene.currData.layers = {};
-    };
+    if (id === undefined) return;
 
-    // Get first unused id
-    if (id === undefined) {
-        id = THOTH.Utils.getFirstUnusedKey(THOTH.Scene.currData.layers);
-    };
+    const layers = THOTH.Scene.currData.layers;
 
-    // Resolve remote id conflict
-    if (THOTH.Scene.currData.layers[id] !== undefined) {
-        alert("Id conflict");
-        return;
+    // Resolve id conflict
+    if (layers[id] !== undefined) {
+        if (layers[id].trash === true) {
+            THOTH.resurrectLayer(id);
+            return;
+        }
+        else {
+            alert("Id conflict");
+            return;
+        }
     };
 
     let layer = {
         id: id,
-        name: "Layer " + id,
+        name: "New Layer",
         description: " ",
         selection: new Set(),
         visible: true,
-        highlightColor: THOTH.Utils.getHighlightColor(id)
+        highlightColor: THOTH.Utils.getHighlightColor(id),
+        trash: false
     };
     
-    THOTH.Scene.currData.layers[id] = layer;
+    layers[id] = layer;
     
     // Create layer folder 
     THOTH.FE.addToLayers(id);
@@ -296,7 +302,7 @@ THOTH.deleteLayer = (id) => {
     if (id === undefined) return;
 
     // If layer is activeLayer, dispose of details
-    if (id === THOTH.activeLayer.id) {
+    if (THOTH.activeLayer && id === THOTH.activeLayer.id) {
         if (FE.detailTabs) FE.detailTabs.dispose();
     }
 
@@ -308,14 +314,34 @@ THOTH.deleteLayer = (id) => {
     layerButton.dispose();
     THOTH.FE.layerButtons.delete(id);
     
-    // Delete layer
-    delete Scene.currData.layers[id];
+    // Move layer to trash
+    layer.trash = true;
     THOTH.activeLayer = undefined;
-    
+
     // Update visuals
     THOTH.updateVisibility();
     
     THOTH.log("Deleted layer: " + layer.name);
+};
+
+THOTH.resurrectLayer = (id) => {
+    if (id === undefined) return;
+
+    const layers = THOTH.Scene.currData.layers;
+    const layer = layers[id];
+
+    if (!layer.trash) return;
+
+    // Remove from trash
+    layer.trash = false;
+
+    // Add button
+    THOTH.FE.addToLayers(id);
+
+    // Update visuals
+    THOTH.updateVisibility();
+
+    THOTH.log("Resurrected layer: " + layer.name);
 };
 
 THOTH.editLayer = (id, attr, value) => {
