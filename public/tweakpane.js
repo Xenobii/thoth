@@ -1536,6 +1536,8 @@ class ButtonView {
         titleElem.classList.add(cn$p('t'));
         bindValueToTextContent(config.props.value('title'), titleElem);
         this.buttonElement.appendChild(titleElem);
+//        this.titleElem = titleElem;
+
     }
 }
 

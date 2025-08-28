@@ -8,6 +8,7 @@
             "THOTH.history.js",
             "THOTH.toolbox.js",
             "THOTH.fe.js",
+            "tweakpane-extension.js",
             "THOTH.scene.js",
             "THOTH.js"
         ]

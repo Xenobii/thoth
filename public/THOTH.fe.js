@@ -29,6 +29,14 @@ FE.setupUI =() => {
     topRightContainer.style.zIndex = '120';
     document.body.appendChild(topRightContainer);
 
+    const lowerLeftContainer = document.createElement('div');
+    lowerLeftContainer.id = 'guicanvasLL';
+    lowerLeftContainer.style.position = 'absolute';
+    lowerLeftContainer.style.top = '60px';          
+    lowerLeftContainer.style.left = '0px';   
+    lowerLeftContainer.style.zIndex = '120';
+    document.body.appendChild(lowerLeftContainer);
+
     const topLeftContainer = document.createElement('div');
     topLeftContainer.id = 'guicanvasTL';
     topLeftContainer.style.position = 'absolute';
@@ -64,7 +72,7 @@ FE.setupUI =() => {
 
     // Toolbox
     FE.toolboxPane = new Pane({
-        container: bottomLeftContainer,
+        container: lowerLeftContainer,
         title: 'Toolbox',
         expanded: true,
     });
@@ -82,6 +90,7 @@ FE.setupUI =() => {
         title: 'Layers',
         expanded: true,
     });
+    enablePaneScroll(FE.layerPane, 200);  // apply scroll only to this pane
     
     // Details Pane
     FE.detailsPane = new Pane({
@@ -95,10 +104,18 @@ FE.setupUI =() => {
         title: 'Export Settings',
         expanded: true,
     });
+    
+    // History Pane 
+    FE.historyPane = new Pane({ 
+        container: bottomLeftContainer, 
+        title: 'History', 
+        expanded: true 
+    });
 
     FE.setupToolboxPane();
     FE.setupLayerPane();
     FE.setupExportPane();
+    FE.setupHistoryPane();
 };
 
 
@@ -107,7 +124,7 @@ FE.setupUI =() => {
 FE.setupToolboxPane = () => {
     // Brush
     const btnBrush = FE.toolboxPane.addButton({
-        title: 'Brush',
+        title: '🖌',
     });
     btnBrush.on('click', () => {
         THOTH.Toolbox.activateBrush();
@@ -116,7 +133,7 @@ FE.setupToolboxPane = () => {
 
     // Eraser
     const btnEraser = FE.toolboxPane.addButton({
-        title: 'Eraser',
+        title: '𖤓',
     });
     btnEraser.on('click', () => {
         THOTH.Toolbox.activateBrush();
@@ -125,8 +142,18 @@ FE.setupToolboxPane = () => {
 
     // Lasso
     const btnLasso = FE.toolboxPane.addButton({
-        title: 'Lasso',
+        title: '𓎤',
     });
+
+    btnLasso.controller.buttonController.view.buttonElement.classList.add('large-symbol');
+    const style = document.createElement('style');
+    style.textContent = `
+        .large-symbol .tp-btnv_t {
+        font-size: 32px;
+    }
+    `;
+    document.head.appendChild(style);
+
     btnLasso.on('click', () => {
         THOTH.Toolbox.activateLasso();
         ATON.Nav.setUserControl(false);
@@ -181,7 +208,7 @@ FE.updateToolRadiusUI = () => {
 
 FE.setupLayerPane = () => {
     const newLayerBtn = FE.layerManagementPane.addButton({
-        title: "New Layer",
+        title: "➕",
     });
 
     newLayerBtn.on('click', () => {
@@ -201,6 +228,16 @@ FE.setupLayerPane = () => {
         
         THOTH.fire("createLayer", (id));
         THOTH.firePhoton("createLayer", (id));
+    });
+
+    // Add Delete Layer button next to it
+    const deleteLayerBtn = FE.layerManagementPane.addButton({
+        title: "🗑️",
+    });
+
+    deleteLayerBtn.on('click', () => {
+        if (!THOTH.activeLayer) return;   // nothing selected
+        FE.popupConfirmDelete(THOTH.activeLayer.id);
     });
 
     // Import previously saved layers
@@ -230,6 +267,15 @@ FE.addToLayers = (id) => {
         THOTH.activeLayer = layer;
         FE.displayDetails();
     });
+
+    // Enable rename from extension
+    //enableButtonRename(layerBtn, layer, 'name');
+
+    // Call global extension function
+    if (typeof window.enableButtonRename === "function") {
+        window.enableButtonRename(layerBtn, layer, "name");
+    }
+
 };
 
 
@@ -302,6 +348,22 @@ FE.setupExportPane = () => {
     exportAnnotationBtn.on('click', () => {
         THOTH.Scene.exportLayers();
     });
+};
+
+// History
+
+// your frontend file
+// (after FE.historyPane and HIS are available, and after the IIFE above is loaded)
+
+FE.setupHistoryPane = () => {
+  const btnHistList = FE.historyPane.addButton({ title: '🕮' });
+  window.attachHistoryChooser(FE.historyPane, btnHistList, { label: 'Jump to' });
+
+  const btnUndo = FE.historyPane.addButton({ title: '↺' });
+  btnUndo.on('click', () => HIS.undo());
+
+  const btnRedo = FE.historyPane.addButton({ title: '↻' });
+  btnRedo.on('click', () => HIS.redo());
 };
 
 
