@@ -70,6 +70,68 @@ FE.setupUI =() => {
     document.body.appendChild(popupContainer);
     FE.popupContainer = popupContainer;
 
+// Add custom style for scaling the Toolbox Pane + Buttons
+    const style = document.createElement('style');
+    style.textContent = `
+       
+        /* Target only Toolbox buttons */
+        /* make the button itself bigger vertically & horizontally */
+            #guicanvasLL .tp-btnv_b {
+            min-height: 33px;              /* ↑ real clickable height */
+            width: 150px;                   /* fill row width */
+            margin: 7px 0;       /* spacing between rows */            
+            font-size: 18px;               /* optional: larger text */
+        }
+        /* Style the Toolbox title */
+            #guicanvasLL .tp-rotv_t {
+            font-weight: 600;   /* bold */
+            font-size: 17px;    /* bigger */
+        }
+            
+        /* Target only History buttons */
+        /* make the button itself bigger vertically & horizontally */
+            #guicanvasBL .tp-btnv_b {
+            min-height: 33px;              /* ↑ real clickable height */
+            width: 180px;                   /* fill row width */
+            margin: 7px 0;       /* spacing between rows */            
+            font-size: 18px;               /* optional: larger text */
+        }
+        /* Style the History title */
+            #guicanvasBL .tp-rotv_t {
+            font-weight: 600;   /* bold */
+            font-size: 17px;    /* bigger */
+        }
+
+        /* Target only Layer Management buttons */
+        /* make the button itself bigger vertically & horizontally */
+            #guicanvasTR .tp-btnv_b {
+            min-height: 33px;              /* ↑ real clickable height */
+            width: 220px;                   /* fill row width */
+            margin: 7px 0;       /* spacing between rows */            
+            font-size: 18px;               /* optional: larger text */
+        }
+        /* Style the Layer Management title */
+            #guicanvasTR .tp-rotv_t {
+            font-weight: 600;   /* bold */
+            font-size: 17px;    /* bigger */
+        }
+
+        /* Target only Layer Details buttons */
+        /* make the button itself bigger vertically & horizontally */
+            #guicanvasBR .tp-btnv_b {
+            min-height: 33px;              /* ↑ real clickable height */
+            width: 280px;                   /* fill row width */
+            margin: 7px 0;       /* spacing between rows */            
+            font-size: 18px;               /* optional: larger text */
+        }
+        /* Style the Layer Details title */
+            #guicanvasBR .tp-rotv_t {
+            font-weight: 600;   /* bold */
+            font-size: 17px;    /* bigger */
+        }
+    `;
+    document.head.appendChild(style);
+
     // Toolbox
     FE.toolboxPane = new Pane({
         container: lowerLeftContainer,
@@ -118,13 +180,12 @@ FE.setupUI =() => {
     FE.setupHistoryPane();
 };
 
-
 // Toolbox
 
 FE.setupToolboxPane = () => {
     // Brush
     const btnBrush = FE.toolboxPane.addButton({
-        title: '🖌',
+        title: 'BRUSH 🖌',
     });
     btnBrush.on('click', () => {
         THOTH.Toolbox.activateBrush();
@@ -133,7 +194,7 @@ FE.setupToolboxPane = () => {
 
     // Eraser
     const btnEraser = FE.toolboxPane.addButton({
-        title: '𖤓',
+        title: 'ERRASE',
     });
     btnEraser.on('click', () => {
         THOTH.Toolbox.activateBrush();
@@ -142,17 +203,17 @@ FE.setupToolboxPane = () => {
 
     // Lasso
     const btnLasso = FE.toolboxPane.addButton({
-        title: '𓎤',
+        title: 'LASSO',
     });
 
-    btnLasso.controller.buttonController.view.buttonElement.classList.add('large-symbol');
-    const style = document.createElement('style');
-    style.textContent = `
-        .large-symbol .tp-btnv_t {
-        font-size: 32px;
-    }
-    `;
-    document.head.appendChild(style);
+    //btnLasso.controller.buttonController.view.buttonElement.classList.add('large-symbol');
+    //const style = document.createElement('style');
+    //style.textContent = `
+    //    .large-symbol .tp-btnv_t {
+    //    font-size: 32px;
+    //}
+    //`;
+    //document.head.appendChild(style);
 
     btnLasso.on('click', () => {
         THOTH.Toolbox.activateLasso();
@@ -161,7 +222,7 @@ FE.setupToolboxPane = () => {
 
     // None
     const btnNone = FE.toolboxPane.addButton({
-        title: 'None',
+        title: 'NONE',
     });
     btnNone.on('click', () => {
         THOTH.Toolbox.deactivate();
@@ -208,7 +269,7 @@ FE.updateToolRadiusUI = () => {
 
 FE.setupLayerPane = () => {
     const newLayerBtn = FE.layerManagementPane.addButton({
-        title: "➕",
+        title: "ADD LAYER ➕",
     });
 
     newLayerBtn.on('click', () => {
@@ -232,7 +293,7 @@ FE.setupLayerPane = () => {
 
     // Add Delete Layer button next to it
     const deleteLayerBtn = FE.layerManagementPane.addButton({
-        title: "🗑️",
+        title: "DELETE LAYER 🗑️",
     });
 
     deleteLayerBtn.on('click', () => {
@@ -356,13 +417,13 @@ FE.setupExportPane = () => {
 // (after FE.historyPane and HIS are available, and after the IIFE above is loaded)
 
 FE.setupHistoryPane = () => {
-  const btnHistList = FE.historyPane.addButton({ title: '🕮' });
+  const btnHistList = FE.historyPane.addButton({ title: 'HISTORY LIST 🕮' });
   window.attachHistoryChooser(FE.historyPane, btnHistList, { label: 'Jump to' });
 
-  const btnUndo = FE.historyPane.addButton({ title: '↺' });
+  const btnUndo = FE.historyPane.addButton({ title: 'UNDO ↺' });
   btnUndo.on('click', () => HIS.undo());
 
-  const btnRedo = FE.historyPane.addButton({ title: '↻' });
+  const btnRedo = FE.historyPane.addButton({ title: 'REDO ↻' });
   btnRedo.on('click', () => HIS.redo());
 };
 
