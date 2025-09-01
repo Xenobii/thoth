@@ -274,7 +274,7 @@
             <div class="atonFieldInput">
               <input id="${fid}" type="text" placeholder="${f.placeholder || ''}"
                      value="${currVal || ""}" style="width:100%; margin-bottom:6px;" />
-              <a id="${lid}" href="${currVal || "#"}" target="_blank" rel="noopener noreferrer" // href -> hypelink reference : href has the url target blank opens new tab rel secures our webpage style makes blue and underlined the open image
+              <a id="${lid}" href="${currVal || "#"}" target="_blank" rel="noopener noreferrer" // href  hypelink reference : href has the url target blank opens new tab rel secures our webpage style makes blue and underlined the open image
                  style="color:#4fa3ff; text-decoration:underline; display:${currVal ? 'inline' : 'none'};">
                  Open image
               </a>
