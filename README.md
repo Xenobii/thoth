@@ -57,4 +57,5 @@ TBI
 ## TODO List
 - [x] Debug collaborative
 - [x] Implement history management
+- [ ] UI overhaul
 - [ ] Lasso hyper-optimization

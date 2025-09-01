@@ -19,10 +19,10 @@ THOTH.Scene   = Scene;
 THOTH.setup = async () => {
     THOTH._bLeftMouseDown = false;
     
-    THOTH._bPauseQuery = false;
-    THOTH._bLoading    = true;
-    THOTH._bAtonReady  = false;
-    THOTH._bSynced     = false;
+    THOTH._bPauseQuery  = false;
+    THOTH._bLoading     = true;
+    THOTH._bAtonReady   = false;
+    THOTH._bSynced      = false;
 
     ATON.on("AllNodeRequestsCompleted", () => {
         THOTH._bAtonReady = true;
@@ -93,8 +93,10 @@ THOTH._parseAtonElements = async () => {
     THOTH._queryData    = ATON._queryDataScene;
     THOTH._renderer     = ATON._renderer;
     THOTH._rcScene      = ATON._rcScene;
-    THOTH._bPauseQuery  = ATON._bPauseQuery;
     THOTH.RCLayer       = ATON.NTYPES.SCENE;
+    THOTH._bPauseQuery  = ATON._bPauseQuery;
+    THOTH._colorSpace   = ATON._stdEncoding;
+    THOTH.getSceneNode  = ATON.getSceneNode;
 
     THOTH._bListenKeyboardEvents = ATON._bListenKeyboardEvents;
 
@@ -121,8 +123,8 @@ THOTH._parseAtonElements = async () => {
     THOTH._numUsers     = ATON.Photon._numUsers;
 
     // Utils
-    THOTH._mSelectorSphere = ATON.SUI._mSelectorSphere;
-    
+    THOTH._mSelectorSphere  = ATON.SUI._mSelectorSphere;
+    THOTH.textureLoader     = ATON.Utils.textureLoader;
 };
 
 THOTH.initRC = () => {
@@ -185,10 +187,6 @@ THOTH.initEventListeners = () => {
         if (e.button === 2) THOTH._bRightMouseDown = false;
     }, false);
 
-};
-
-THOTH.discardAtonEventListeners = () => {
-    THOTH.discardAtonEventHandler("")
 };
 
 
@@ -267,6 +265,54 @@ THOTH.updateVisibility = () => {
     const mode  = THOTH.MODE_ADD;
 
     // update on photon
+};
+
+THOTH.updateNormalMap = (path, intensity = 10) => {
+    if (!path) return false;
+
+    THOTH.textureLoader.load(path, (tex)=>{
+        const mat = THOTH.mainMesh.material;
+
+        if (mat.normalMap) {
+            mat.normalMap.image = tex.image;
+        }
+        else {
+            mat.normalMap       = tex;
+            mat.normalMap.flipY = false;
+            mat.normalMap.wrapS = mat.map.wrapS;
+            mat.normalMap.wrapT = mat.map.wrapT;
+            mat.normalScale.set(intensity, intensity);
+            // mat.normalScale.set(intensity, -intensity);
+        }
+        mat.normalMap.needsUpdate   = true;
+        mat.needsUpdate             = true;
+        THOTH.updateVisibility();
+    });
+
+    THOTH.log("Normal map updated successfully!");
+};
+
+
+THOTH.updateTextureMap = (path) => {
+    if (!path) return false;
+
+    THOTH.textureLoader.load(path, (tex)=>{
+        const mat = THOTH.mainMesh.material;
+
+        if (mat.map) {
+            mat.map.image = tex.image;
+        }
+        else {
+            mat.map = tex;
+            mat.map.wrapS = mat.map.wrapS;
+            mat.map.wrapT = mat.map.wrapT;
+        }
+        mat.map.needsUpdate = true;
+        mat.needsUpdate     = true;
+        THOTH.updateVisibility();
+    });
+
+    THOTH.log("Texture map updated successfully!");
 };
 
 
@@ -384,10 +430,9 @@ THOTH.syncScene = (layers) => {
 
 
 // TODO: Remove all unnecessary ATON eventListeners on startup
+// TODO: Disable event listeners on popup/rename
 // TODO: Make layer descriptions field-based for CIDOC-CRM
 // TODO: Config history for rename/edit description
-// TODO: Update popup based on ATON commits (temp)
-// TOOD: Have a function for swapping normal maps for the same mesh
 // TODO: Commit history implementation
 // TODO: Resolve user versions
 // TODO: Comments
