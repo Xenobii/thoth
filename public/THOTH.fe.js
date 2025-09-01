@@ -12,6 +12,7 @@ FE.init = () => {
     FE.layerButtons = new Map();
 
     FE._bPopup = false;
+    FE.uiScale = 2;
 
     FE.setupTextailsElements();
     FE.setupUI();
@@ -20,7 +21,7 @@ FE.init = () => {
 
 // Setup
 
-FE.setupUI =() => {
+FE.setupUI = () => {
     // Create new containers
     const topRightContainer = document.createElement('div');
     topRightContainer.id = 'guicanvasTR';
@@ -71,68 +72,6 @@ FE.setupUI =() => {
     document.body.appendChild(popupContainer);
     FE.popupContainer = popupContainer;
 
-    // Add custom style for scaling the Toolbox Pane + Buttons
-    const style = document.createElement('style');
-    style.textContent = `
-       
-        /* Target only Toolbox buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasLL .tp-btnv_b {
-            min-height: 33px;               /* ↑ real clickable height */
-            width: 150px;                   /* fill row width */
-            margin: 7px 0;                  /* spacing between rows */            
-            font-size: 18px;                /* optional: larger text */
-        }
-        /* Style the Toolbox title */
-            #guicanvasLL .tp-rotv_t {
-            font-weight: 600;               /* bold */
-            font-size: 17px;                /* bigger */
-        }
-            
-        /* Target only History buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasBL .tp-btnv_b {
-            min-height: 33px;               /* ↑ real clickable height */
-            width: 180px;                   /* fill row width */
-            margin: 7px 0;                  /* spacing between rows */            
-            font-size: 18px;                /* optional: larger text */
-        }
-        /* Style the History title */
-            #guicanvasBL .tp-rotv_t {
-            font-weight: 600;               /* bold */
-            font-size: 17px;                /* bigger */
-        }
-
-        /* Target only Layer Management buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasTR .tp-btnv_b {
-            min-height: 33px;               /* ↑ real clickable height */
-            width: 220px;                   /* fill row width */
-            margin: 7px 0;                  /* spacing between rows */            
-            font-size: 18px;                /* optional: larger text */
-        }
-        /* Style the Layer Management title */
-            #guicanvasTR .tp-rotv_t {
-            font-weight: 600;               /* bold */
-            font-size: 17px;                /* bigger */
-        }
-
-        /* Target only Layer Details buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasBR .tp-btnv_b {
-            min-height: 33px;               /* ↑ real clickable height */
-            width: 280px;                   /* fill row width */
-            margin: 7px 0;                  /* spacing between rows */            
-            font-size: 18px;                /* optional: larger text */
-        }
-        /* Style the Layer Details title */
-            #guicanvasBR .tp-rotv_t {
-            font-weight: 600;               /* bold */
-            font-size: 17px;                /* bigger */
-        }
-    `;
-    document.head.appendChild(style);
-
     // Toolbox
     FE.toolboxPane = new Pane({
         container: lowerLeftContainer,
@@ -174,11 +113,49 @@ FE.setupUI =() => {
         title: 'History', 
         expanded: true 
     });
-
+    
     FE.setupToolboxPane();
     FE.setupLayerPane();
     FE.setupExportPane();
     FE.setupHistoryPane();
+
+    FE.updateUIScale();
+};
+
+
+FE.applyPaneStyling = (k, pane, btnWidth = 150) => {
+    const height_scale  = 10 * k;
+    const width_scale   = k;
+    const font_scale_1  = 5 * k;
+    const font_scale_2  = 6 * k;
+    const margin_scale  = 2 * k;
+
+    pane.element.querySelectorAll('.tp-btnv_b').forEach(btn => {
+        btn.style.minHeight = `${height_scale}px`;
+        btn.style.width = `${width_scale * btnWidth}px`;
+        btn.style.margin = `${margin_scale}px 0`;
+        btn.style.fontSize = `${font_scale_1}px`;
+    });
+    const title = pane.element.querySelector('.tp-rotv_t');
+    if (title) {
+        title.style.fontWeight = '600';
+        title.style.fontSize = `${font_scale_2}px`;
+    }
+};
+
+
+FE.updateUIScale = (k) => {
+    if (k === undefined) k = FE.uiScale;
+    if (k <= 0) return false;
+
+    FE.uiScale = k; 
+
+    FE.applyPaneStyling(FE.uiScale, FE.toolboxPane, 50);
+    FE.applyPaneStyling(FE.uiScale, FE.historyPane, 60);
+    FE.applyPaneStyling(FE.uiScale, FE.layerManagementPane, 70);
+    FE.applyPaneStyling(FE.uiScale, FE.layerPane, 60);
+    FE.applyPaneStyling(FE.uiScale, FE.detailsPane, 90);
+    FE.applyPaneStyling(FE.uiScale, FE.exportPane, 90);
 };
 
 
@@ -406,6 +383,8 @@ FE.addToLayers = (id) => {
     if (typeof window.enableButtonRename === "function") {
         window.enableButtonRename(layerBtn, layer, "name");
     }
+
+    FE.updateUIScale();
 
 };
 

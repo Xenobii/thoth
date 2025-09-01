@@ -90,30 +90,35 @@ THOTH._parseAtonElements = async () => {
     };
     THOTH.mainMesh = getMainMesh();
     
-    THOTH._queryData = ATON._queryDataScene;
-    THOTH._renderer  = ATON._renderer;
-    THOTH._rcScene   = ATON._rcScene;
-    THOTH.RCLayer    = ATON.NTYPES.SCENE;
+    THOTH._queryData    = ATON._queryDataScene;
+    THOTH._renderer     = ATON._renderer;
+    THOTH._rcScene      = ATON._rcScene;
+    THOTH._bPauseQuery  = ATON._bPauseQuery;
+    THOTH.RCLayer       = ATON.NTYPES.SCENE;
+
+    THOTH._bListenKeyboardEvents = ATON._bListenKeyboardEvents;
 
     // Scene
-    THOTH.Scene.MODE_ADD = 0;
-    THOTH.Scene.MODE_DEL = 1;
+    THOTH.Scene.MODE_ADD    = 0;
+    THOTH.Scene.MODE_DEL    = 1;
 
-    THOTH.Scene.patch    = ATON.SceneHub.patch;
-    THOTH.Scene.load     = ATON.SceneHub.load;
-    THOTH.Scene.currData = ATON.SceneHub.currData;
+    THOTH.Scene.patch       = ATON.SceneHub.patch;
+    THOTH.Scene.load        = ATON.SceneHub.load;
+    THOTH.Scene.currData    = ATON.SceneHub.currData;
 
     // EventHub
-    THOTH.on   = ATON.on;
-    THOTH.fire = ATON.fire;
+    THOTH.on    = ATON.on;
+    THOTH.fire  = ATON.fire;
+
+    THOTH.discardAtonEventHandler = ATON.EventHub.clearEventHandlers;
     
     // Nav
-    THOTH._camera   = ATON.Nav._camera;
+    THOTH._camera       = ATON.Nav._camera;
 
     // Photon
-    THOTH.firePhoton = ATON.Photon.fire;
-    THOTH.onPhoton   = ATON.Photon.on;
-    THOTH._numUsers  = ATON.Photon._numUsers;
+    THOTH.firePhoton    = ATON.Photon.fire;
+    THOTH.onPhoton      = ATON.Photon.on;
+    THOTH._numUsers     = ATON.Photon._numUsers;
 
     // Utils
     THOTH._mSelectorSphere = ATON.SUI._mSelectorSphere;
@@ -180,6 +185,10 @@ THOTH.initEventListeners = () => {
         if (e.button === 2) THOTH._bRightMouseDown = false;
     }, false);
 
+};
+
+THOTH.discardAtonEventListeners = () => {
+    THOTH.discardAtonEventHandler("")
 };
 
 
