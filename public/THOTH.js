@@ -374,5 +374,13 @@ THOTH.syncScene = (layers) => {
 };
 
 
-// TODO: History
 // TODO: Remove all unnecessary ATON eventListeners on startup
+// TODO: Make layer descriptions field-based for CIDOC-CRM
+// TODO: Config history for rename/edit description
+// TODO: Update popup based on ATON commits (temp)
+// TOOD: Have a function for swapping normal maps for the same mesh
+// TODO: Commit history implementation
+// TODO: Resolve user versions
+// TODO: Comments
+// TODO: Show demo to Christina
+// TODO: Source image popup of pov
