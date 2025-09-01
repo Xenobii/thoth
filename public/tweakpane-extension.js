@@ -244,3 +244,116 @@
     });
   };
 })();
+
+// PopUp Window (supports multiple text and image fields)
+(function () {
+  window.PopUpEditDescription = function (id, fields) {
+    const layer = THOTH.Scene.currData.layers[id];
+
+    // Build rows with unique IDs per field index
+    let inputsHTML = fields.map((f, i) => {
+      const current = layer?.[f.key];
+      // If multiple fields share the same key and value is array, pick i-th or empty
+      const currVal = Array.isArray(current) ? (current[i] ?? "") : (current ?? "");
+      const isMultiline = f.type === "textarea";
+      const isImage = f.type === "image";
+      const fid = `field_${f.key}_${i}`;
+      const lid = `link_${f.key}_${i}`; // for not having an id two times
+      const pid = `preview_${f.key}_${i}`; // -//-
+
+      if (isMultiline) {
+        return `
+          <div class="atonFieldRow">
+            <label class="atonFieldLabel" for="${fid}">${f.label}</label>
+            <textarea id="${fid}" class="atonFieldInput" placeholder="${f.placeholder || ''}">${currVal || ""}</textarea>
+          </div>`;
+      } else if (isImage) {
+        return `
+          <div class="atonFieldRow">
+            <label class="atonFieldLabel" for="${fid}">${f.label}</label>
+            <div class="atonFieldInput">
+              <input id="${fid}" type="text" placeholder="${f.placeholder || ''}"
+                     value="${currVal || ""}" style="width:100%; margin-bottom:6px;" />
+              <a id="${lid}" href="${currVal || "#"}" target="_blank" rel="noopener noreferrer" // href -> hypelink reference : href has the url target blank opens new tab rel secures our webpage style makes blue and underlined the open image
+                 style="color:#4fa3ff; text-decoration:underline; display:${currVal ? 'inline' : 'none'};">
+                 Open image
+              </a>
+              <div id="${pid}" style="margin-top:6px; ${currVal ? '' : 'display:none;'}">
+                ${currVal ? `<img src="${currVal}" alt="Preview" style="max-width:100%; border-radius:4px;" />` : ""} //src has the url, alt preview describes the image with text, style fits the image at margin
+              </div>
+            </div>
+          </div>`;
+      } else {
+        return `
+          <div class="atonFieldRow">
+            <label class="atonFieldLabel" for="${fid}">${f.label}</label>
+            <input id="${fid}" class="atonFieldInput" type="text"
+                   placeholder="${f.placeholder || ''}" value="${currVal || ""}" />
+          </div>`;
+      }
+    }).join("");
+
+    const htmlcontent = `
+      <div class="atonPopupTitle"> Edit Layer Info </div>
+      <div class="atonPopupBody">${inputsHTML}</div>
+      <div class="atonPopupFooter">
+        <div class="atonBTN atonBTN-green" id="btnOK">OK</div>
+        <div class="atonBTN" id="btnCancel">Cancel</div>
+      </div>
+    `;
+
+    FE.popupShow(htmlcontent, "atonPopupLarge");
+
+    // Live update for each image field (unique per index)
+    fields.forEach((f, i) => {
+      if (f.type === "image") {
+        const fid = `#field_${f.key}_${i}`;
+        const lid = `#link_${f.key}_${i}`;
+        const pid = `#preview_${f.key}_${i}`;
+        $(fid).on("input", function () {
+          const url = $(this).val();
+          const $link = $(lid);
+          const $preview = $(pid);
+          if (url) {
+            $link.attr("href", url).show();
+            $preview.html(`<img src="${url}" alt="Preview" style="max-width:100%; border-radius:4px;" />`).show();
+          } else {
+            $link.hide();
+            $preview.hide();
+          }
+        });
+      }
+    });
+
+    // OK: save values; aggregate repeated keys into arrays
+    $("#btnOK").click(() => {
+      const collected = {}; // key -> string | array
+      fields.forEach((f, i) => {
+        const val = String($(`#field_${f.key}_${i}`).val() ?? "");
+        if (collected[f.key] === undefined) {
+          collected[f.key] = val;
+        } else if (Array.isArray(collected[f.key])) {
+          collected[f.key].push(val);
+        } else {
+          collected[f.key] = [collected[f.key], val];
+        }
+      });
+
+      // Write back to layer and broadcast per key
+      Object.keys(collected).forEach(key => {
+        const value = collected[key];
+        layer[key] = value;
+        if (typeof THOTH.fire === "function") {
+          THOTH.fire("editLayer", { id, attr: key, value });
+        }
+        if (typeof THOTH.firePhoton === "function") {
+          THOTH.firePhoton("editLayer", { id, attr: key, value });
+        }
+      });
+
+      FE.popupClose();
+    });
+
+    $("#btnCancel").click(() => FE.popupClose());
+  };
+})();

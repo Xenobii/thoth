@@ -12,7 +12,9 @@ FE.init = () => {
     FE.layerButtons = new Map();
 
     FE._bPopup = false;
+    FE.uiScale = 2;
 
+    FE.setupTextailsElements();
     FE.setupUI();
 };
 
@@ -70,68 +72,6 @@ FE.setupUI =() => {
     document.body.appendChild(popupContainer);
     FE.popupContainer = popupContainer;
 
-// Add custom style for scaling the Toolbox Pane + Buttons
-    const style = document.createElement('style');
-    style.textContent = `
-       
-        /* Target only Toolbox buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasLL .tp-btnv_b {
-            min-height: 33px;              /* ↑ real clickable height */
-            width: 150px;                   /* fill row width */
-            margin: 7px 0;       /* spacing between rows */            
-            font-size: 18px;               /* optional: larger text */
-        }
-        /* Style the Toolbox title */
-            #guicanvasLL .tp-rotv_t {
-            font-weight: 600;   /* bold */
-            font-size: 17px;    /* bigger */
-        }
-            
-        /* Target only History buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasBL .tp-btnv_b {
-            min-height: 33px;              /* ↑ real clickable height */
-            width: 180px;                   /* fill row width */
-            margin: 7px 0;       /* spacing between rows */            
-            font-size: 18px;               /* optional: larger text */
-        }
-        /* Style the History title */
-            #guicanvasBL .tp-rotv_t {
-            font-weight: 600;   /* bold */
-            font-size: 17px;    /* bigger */
-        }
-
-        /* Target only Layer Management buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasTR .tp-btnv_b {
-            min-height: 33px;              /* ↑ real clickable height */
-            width: 220px;                   /* fill row width */
-            margin: 7px 0;       /* spacing between rows */            
-            font-size: 18px;               /* optional: larger text */
-        }
-        /* Style the Layer Management title */
-            #guicanvasTR .tp-rotv_t {
-            font-weight: 600;   /* bold */
-            font-size: 17px;    /* bigger */
-        }
-
-        /* Target only Layer Details buttons */
-        /* make the button itself bigger vertically & horizontally */
-            #guicanvasBR .tp-btnv_b {
-            min-height: 33px;              /* ↑ real clickable height */
-            width: 280px;                   /* fill row width */
-            margin: 7px 0;       /* spacing between rows */            
-            font-size: 18px;               /* optional: larger text */
-        }
-        /* Style the Layer Details title */
-            #guicanvasBR .tp-rotv_t {
-            font-weight: 600;   /* bold */
-            font-size: 17px;    /* bigger */
-        }
-    `;
-    document.head.appendChild(style);
-
     // Toolbox
     FE.toolboxPane = new Pane({
         container: lowerLeftContainer,
@@ -178,7 +118,113 @@ FE.setupUI =() => {
     FE.setupLayerPane();
     FE.setupExportPane();
     FE.setupHistoryPane();
+
+    FE.updateUIScale();
 };
+
+FE.applyPaneStyling = (k, pane, btnWidth = 150) => {
+    const height_scale  = 10 * k;
+    const width_scale   = k;
+    const font_scale_1  = 5 * k;
+    const font_scale_2  = 6 * k;
+    const margin_scale  = 2 * k;
+
+    pane.element.querySelectorAll('.tp-btnv_b').forEach(btn => {
+        btn.style.minHeight = `${height_scale}px`;
+        btn.style.width = `${width_scale * btnWidth}px`;
+        btn.style.margin = `${margin_scale}px 0`;
+        btn.style.fontSize = `${font_scale_1}px`;
+    });
+    const title = pane.element.querySelector('.tp-rotv_t');
+    if (title) {
+        title.style.fontWeight = '600';
+        title.style.fontSize = `${font_scale_2}px`;
+    }
+};
+
+
+FE.updateUIScale = (k) => {
+    if (k === undefined) k = FE.uiScale;
+    if (k <= 0) return false;
+
+    FE.uiScale = k; 
+
+    FE.applyPaneStyling(FE.uiScale, FE.toolboxPane, 50);
+    FE.applyPaneStyling(FE.uiScale, FE.historyPane, 60);
+    FE.applyPaneStyling(FE.uiScale, FE.layerManagementPane, 80);
+    FE.applyPaneStyling(FE.uiScale, FE.layerPane, 80);
+    FE.applyPaneStyling(FE.uiScale, FE.detailsPane, 90);
+    FE.applyPaneStyling(FE.uiScale, FE.exportPane, 90);
+};
+
+
+// Textailes elements
+
+FE.setupBackground = (color1, color2) => {
+    const dpr       = window.devicePixelRatio || 1;
+    const canvas    = document.createElement('canvas')
+    canvas.width    = THOTH._renderer.domElement.clientWidth * dpr;
+    canvas.height   = THOTH._renderer.domElement.clientHeight * dpr;
+    const ctx       = canvas.getContext('2d');
+
+    // Make vertical gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, color1);
+    grad.addColorStop(1, color2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply to scene
+    const texture = new THREE.CanvasTexture(canvas);
+    THOTH._scene.background = texture;
+};
+
+FE.addTextailesRef = () => {
+    const div = document.createElement('div');
+    div.id = 'idPoweredBy';
+    div.className = 'textailesPoweredBy';
+    
+    // Styling
+    div.style.position      = 'fixed';
+    div.style.right         = '0px';
+    div.style.bottom        = '0px';
+    div.style.display       = 'inline-block';
+    div.style.position      = 'fixed';
+    div.style.zIndex        = 150;
+    div.style.color         = '#FFF';
+    div.style.textShadow    = '0px 0px 4px #000000';
+    div.style.fontSize      = '70%';
+    div.style.padding       = '5px';
+    div.style.textAlign     = 'right';
+
+    const thoth_link        = document.createElement('a');
+    thoth_link.href         = 'https://github.com/Xenobii/thoth';
+    thoth_link.target       = '_blank';
+    thoth_link.textContent  = 'THOTH'
+    
+    const text  = document.createTextNode(' is powered by ');
+    
+    const textailes_link        = document.createElement('a');
+    textailes_link.href         = 'https://www.echoes-eccch.eu/textailes/';
+    textailes_link.target       = '_blank';
+    textailes_link.textContent  = 'TEXTaiLES';
+
+    div.appendChild(thoth_link);
+    div.appendChild(text);
+    div.appendChild(textailes_link);
+
+    document.body.append(div);
+};
+
+FE.setupTextailsElements = () => {
+    // Background
+    textailes_colors = ['#B37C8B', '#265D72', '#C39CAB','#88abb9ff'];   // Temp
+    FE.setupBackground(textailes_colors[3], textailes_colors[2]);
+
+    // Text - link
+    FE.addTextailesRef();
+};
+
 
 // Toolbox
 
@@ -194,7 +240,7 @@ FE.setupToolboxPane = () => {
 
     // Eraser
     const btnEraser = FE.toolboxPane.addButton({
-        title: 'ERRASE',
+        title: 'ERRASER 🧽',
     });
     btnEraser.on('click', () => {
         THOTH.Toolbox.activateBrush();
@@ -203,18 +249,8 @@ FE.setupToolboxPane = () => {
 
     // Lasso
     const btnLasso = FE.toolboxPane.addButton({
-        title: 'LASSO',
+        title: 'LASSO 𐚁',
     });
-
-    //btnLasso.controller.buttonController.view.buttonElement.classList.add('large-symbol');
-    //const style = document.createElement('style');
-    //style.textContent = `
-    //    .large-symbol .tp-btnv_t {
-    //    font-size: 32px;
-    //}
-    //`;
-    //document.head.appendChild(style);
-
     btnLasso.on('click', () => {
         THOTH.Toolbox.activateLasso();
         ATON.Nav.setUserControl(false);
@@ -337,6 +373,8 @@ FE.addToLayers = (id) => {
         window.enableButtonRename(layerBtn, layer, "name");
     }
 
+    FE.updateUIScale();
+
 };
 
 
@@ -394,7 +432,13 @@ FE.displayDetails = () => {
         FE.popupConfirmDelete(activeLayer.id);
     });
     editDescriptionBtn.on('click', () => {
-        FE.popupEditDescription(activeLayer.id);
+        PopUpEditDescription(activeLayer.id, [
+    { key: "author",      label: "author",      placeholder: "Enter author" },
+    { key: "title",       label: "title",       placeholder: "Enter title" },
+    { key: "description", label: "description", placeholder: "Short description" },
+    { key: "previewImage", label: "image",      placeholder: "Paste image URL", type: "image" }
+    
+  ]);
     })
 };
 
