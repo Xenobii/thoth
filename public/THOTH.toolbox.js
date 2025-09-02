@@ -14,13 +14,14 @@ Toolbox.init = () => {
     Toolbox._bInitialized = false;
 
     // Adjustable params
-    Toolbox.lassoPrecision = 0.1;  // between 0.1 and 1
+    Toolbox.lassoPrecision  = 0.1;  // between 0.1 and 1
     Toolbox.normalThreshold = 0; // between -1 and 1
     Toolbox.selectObstructedFaces = false;
 
-    Toolbox.enabled = true;
-    Toolbox.brushEnabled = false;
-    Toolbox.lassoEnabled = false;
+    Toolbox.enabled         = false;
+    Toolbox.brushEnabled    = false;
+    Toolbox.eraserEnabled   = false;
+    Toolbox.lassoEnabled    = false;
 
     // Internal params
     Toolbox._tempSelextion = new Set();
@@ -45,7 +46,7 @@ Toolbox.initBrushEventListeners = () => {
     });
 
     el.addEventListener('mousedown', (e) => {
-        if (!Toolbox.brushEnabled) return;
+        if (!(Toolbox.brushEnabled || Toolbox.eraserEnabled)) return;
 
         if (THOTH.activeLayer === undefined) {
             console.log("No layer selected!");
@@ -53,17 +54,22 @@ Toolbox.initBrushEventListeners = () => {
             return;
         };
 
-        // Toolbox.tempSelection = new Set(THOTH.activeLayer.selection);
         Toolbox.tempSelection = new Set();
         
         if (THOTH._queryData === undefined) return;
         
-        if (e.button === 0) Toolbox._brushActive();
-        if (e.button === 2) Toolbox._eraserActive();
+        if (Toolbox.brushEnabled) {
+            if (e.button === 0) Toolbox._brushActive();
+            if (e.button === 2) Toolbox._eraserActive();
+        }
+        if (Toolbox.eraserEnabled) {
+            if (e.button === 0) Toolbox._eraserActive();
+            if (e.button === 2) Toolbox._brushActive();
+        }
     }, false);
 
     el.addEventListener('mouseup', (e) => {
-        if (!Toolbox.brushEnabled) return;
+        if (!(Toolbox.brushEnabled || Toolbox.eraserEnabled)) return;
 
         if (THOTH.activeLayer === undefined) {
             return;
@@ -74,18 +80,20 @@ Toolbox.initBrushEventListeners = () => {
         // Left mouse click
         if (e.button === 0) {
             el.style.cursor = 'default';
-            Toolbox._endBrush();
+            if (Toolbox.brushEnabled) Toolbox._endBrush();
+            if (Toolbox.eraserEnabled) Toolbox._endEraser();
         };
         
         // Right mouse click
         if (e.button === 2) {
             el.style.cursor = 'default';
-            Toolbox._endEraser();
+            if (Toolbox.brushEnabled) Toolbox._endEraser();
+            if (Toolbox.eraserEnabled) Toolbox._endBrush();
         };
     }, false);
     
     el.addEventListener('mousemove', () => {
-        if (!Toolbox.brushEnabled) return;
+        if (!(Toolbox.brushEnabled || Toolbox.eraserEnabled)) return;
 
         if (THOTH.activeLayer === undefined) {
             return;
@@ -95,12 +103,18 @@ Toolbox.initBrushEventListeners = () => {
         
         if (THOTH._queryData === undefined) return;
 
-        if (THOTH._bLeftMouseDown === true)  Toolbox._brushActive();
-        if (THOTH._bRightMouseDown === true) Toolbox._eraserActive();
+        if (THOTH._bLeftMouseDown === true)  {
+            if (Toolbox.brushEnabled) Toolbox._brushActive();
+            if (Toolbox.eraserEnabled) Toolbox._eraserActive();
+        };
+        if (THOTH._bRightMouseDown === true) {
+            if (Toolbox.brushEnabled) Toolbox._eraserActive();
+            if (Toolbox.eraserEnabled) Toolbox._brushActive();
+        };
     }, false);
 
     w.addEventListener('keydown', (k) => {
-        if (!Toolbox.brushEnabled) return; 
+        if (!(Toolbox.brushEnabled || Toolbox.eraserEnabled)) return; 
         if (k.key === '[') Toolbox.decreaseSelectorSize();
         if (k.key === ']') Toolbox.increaseSelectorSize();
     }, false);
@@ -662,25 +676,35 @@ Toolbox._pointDistance = (pos1, pos2) => {
 Toolbox.activate = () => Toolbox.enabled = true;
 
 Toolbox.deactivate = () => {
-    Toolbox.enabled = false;
-    Toolbox.brushEnabled = false;
-    Toolbox.lassoEnabled = false;
+    Toolbox.enabled         = false;
+    Toolbox.brushEnabled    = false;
+    Toolbox.eraserEnabled   = false;
+    Toolbox.lassoEnabled    = false;
 };
 
 Toolbox.activateBrush = () => {
-    Toolbox.enabled = true;
-    Toolbox.brushEnabled = true;
-    Toolbox.lassoEnabled = false;
+    Toolbox.enabled         = true;
+    Toolbox.brushEnabled    = true;
+    Toolbox.eraserEnabled   = false;
+    Toolbox.lassoEnabled    = false;
+};
+
+Toolbox.activateEraser = () => {
+    Toolbox.enabled         = true;
+    Toolbox.brushEnabled    = false;
+    Toolbox.eraserEnabled   = true
+    Toolbox.lassoEnabled    = false;
 };
 
 Toolbox.activateLasso = () => {
-    Toolbox.enabled = true;
-    Toolbox.brushEnabled = false;
-    Toolbox.lassoEnabled = true;
+    Toolbox.enabled         = true;
+    Toolbox.brushEnabled    = false;
+    Toolbox.eraserEnabled   = false;
+    Toolbox.lassoEnabled    = true;
 };
 
 Toolbox.deactivateBrush = () => Toolbox.brushEnabled = false;
-
+Toolbox.deactivateEraser = () => Toolbox.eraserEnabled = false;
 Toolbox.deactivateLasso = () => Toolbox.lassoEnabled = false;
 
 

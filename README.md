@@ -54,16 +54,17 @@ Once you have finished with the annotations, you can export them as a structured
 ### Shortcuts
 TBI
 
-## TODO List
-*For now*
-- [ ] Resolve ATON shortcuts and eventListeners
-- [ ] Change eraser behaviour
+## TODO
+*Back-end*
+- [x] Resolve ATON shortcuts and eventListeners
 - [ ] Resolve history for rename/edit description
 - [ ] Add per-user comments on annotations
-- [ ] Enable object-wise annotations
-- [ ] Allow for CIDOC-CRM compatible annotations via field-based input
+- [x] Enable object-wise annotations
 - [ ] General debugging
+
+*Front-end*
 - [ ] UI Overhaul
+- [ ] Allow for CIDOC-CRM compatible annotations via field-based input
 
 *Once we deploy it to TEXTaiLES*
 - [ ] Resolve user versions and allow version merging

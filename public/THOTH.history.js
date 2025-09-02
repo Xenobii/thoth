@@ -24,18 +24,6 @@ HIS.init = () => {
     HIS.ACTIONS.CHANGE_DESCR = 3;
     HIS.ACTIONS.SELEC_ADD    = 4;
     HIS.ACTIONS.SELEC_DEL    = 5;
-
-    HIS.initEventListeners();
-};
-
-HIS.initEventListeners = () => {
-    const w = window;
-
-    // Buttons
-    w.addEventListener('keydown', (k) => {
-        if (k.key === 'z') HIS.undo();
-        if (k.key === 'y') HIS.redo();
-    }, false);
 };
 
 

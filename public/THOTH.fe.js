@@ -122,6 +122,9 @@ FE.setupUI =() => {
     FE.updateUIScale();
 };
 
+
+// General
+
 FE.applyPaneStyling = (k, pane, btnWidth = 150) => {
     const height_scale  = 10 * k;
     const width_scale   = k;
@@ -141,7 +144,6 @@ FE.applyPaneStyling = (k, pane, btnWidth = 150) => {
         title.style.fontSize = `${font_scale_2}px`;
     }
 };
-
 
 FE.updateUIScale = (k) => {
     if (k === undefined) k = FE.uiScale;
@@ -235,7 +237,7 @@ FE.setupToolboxPane = () => {
     });
     btnBrush.on('click', () => {
         THOTH.Toolbox.activateBrush();
-        ATON.Nav.setUserControl(false);
+        THOTH.setUserControl(false);
     });
 
     // Eraser
@@ -243,8 +245,8 @@ FE.setupToolboxPane = () => {
         title: 'ERRASER 🧽',
     });
     btnEraser.on('click', () => {
-        THOTH.Toolbox.activateBrush();
-        ATON.Nav.setUserControl(false);
+        THOTH.Toolbox.activateEraser();
+        THOTH.setUserControl(false);
     });
 
     // Lasso
@@ -253,7 +255,7 @@ FE.setupToolboxPane = () => {
     });
     btnLasso.on('click', () => {
         THOTH.Toolbox.activateLasso();
-        ATON.Nav.setUserControl(false);
+        THOTH.setUserControl(false);
     });
 
     // None
@@ -262,7 +264,7 @@ FE.setupToolboxPane = () => {
     });
     btnNone.on('click', () => {
         THOTH.Toolbox.deactivate();
-        ATON.Nav.setUserControl(true);
+        THOTH.setUserControl(true);
     });
 };
 

@@ -98,6 +98,9 @@ THOTH._parseAtonElements = async () => {
     THOTH._colorSpace   = ATON._stdEncoding;
     THOTH.getSceneNode  = ATON.getSceneNode;
 
+    THOTH._shiftDown    = ATON._kModShift;
+    THOTH._cntrlDown    = ATON._kModCtrl;
+
     THOTH._bListenKeyboardEvents = ATON._bListenKeyboardEvents;
 
     // Scene
@@ -115,7 +118,8 @@ THOTH._parseAtonElements = async () => {
     THOTH.discardAtonEventHandler = ATON.EventHub.clearEventHandlers;
     
     // Nav
-    THOTH._camera       = ATON.Nav._camera;
+    THOTH._camera           = ATON.Nav._camera;
+    THOTH.setUserControl    = ATON.Nav.setUserControl;
 
     // Photon
     THOTH.firePhoton    = ATON.Photon.fire;
@@ -164,17 +168,17 @@ THOTH.initRC = () => {
 THOTH.initEventListeners = () => {
     let el = THOTH._renderer.domElement;
     let w  = window;
-
+    
     el.addEventListener('resize', () => {
         THOTH._camera.aspect = w.innerWidth / w.innerHeight;
         THOTH._camera.updateProjectionMatrix();
         THOTH._renderer.setSize(w.innerWidth, w.innerHeight);
     }, false)
-
+    
     el.addEventListener('mousemove', (e) => {
         Toolbox._updateScreenMove(e);
     }, false);
-
+    
     el.addEventListener('mousedown', (e) => {
         if (e.button === 0) THOTH._bLeftMouseDown = true;
         if (e.button === 2) THOTH._bRightMouseDown = true;
@@ -182,11 +186,117 @@ THOTH.initEventListeners = () => {
     
     el.addEventListener('mouseup', (e) => {
         el.style.cursor = 'default';
-
+        
         if (e.button === 0) THOTH._bLeftMouseDown = false;
         if (e.button === 2) THOTH._bRightMouseDown = false;
     }, false);
 
+    // --- FOR DEMO ---
+
+    // Discard all aton keybinds and re-establish only the relevant ones
+    THOTH.discardAtonEventHandler("KeyPress");
+    THOTH.discardAtonEventHandler("KeyUp");
+
+    THOTH.on("KeyPress", (k) => {
+        // Settings
+        if (k === ' ' || k === 'Space') HATHOR.popupSettings();
+
+        if (k === 'u') ATON.FE.popupUser();
+        
+        // Current tasks
+        if (k === 'Enter')  HATHOR.finalizeCurrentTask();
+        if (k === 'Escape') HATHOR.cancelCurrentTask();
+
+        // Semantic annotations
+        if (k === 'a'){
+            if (ATON._bqScene) ATON._handleQueryScene();
+            ATON.SemFactory.stopCurrentConvex();
+            HATHOR.popupAddSemantic(ATON.FE.SEMSHAPE_SPHERE);
+        }
+        if (k === 's'){
+            if (ATON._bqScene) ATON._handleQueryScene();
+            ATON.SemFactory.addSurfaceConvexPoint();
+        }
+
+        // Environment
+        if (k === 'l'){
+            ATON.FE.controlLight(true);
+        }
+
+        // Measurements
+        if (k === 'm'){
+            if (ATON._bqScene) ATON._handleQueryScene();
+            HATHOR.measure();
+        }
+
+        // Nav
+        if (k === "Shift") {
+            THOTH._shiftDown = true;
+            if (THOTH.Toolbox.enabled) THOTH.setUserControl(true);
+            else THOTH.setUserControl(false);
+        }
+        if (k === "Control") {
+            THOTH._cntrlDown = true;
+            if (THOTH.Toolbox.enabled) THOTH.setUserControl(true);
+            else THOTH.setUserControl(false);
+        }
+
+        // Toolbox
+        if (k === 'b'){
+            THOTH.Toolbox.activateBrush();
+            THOTH.setUserControl(false);
+        }
+        if (k === 'e'){
+            THOTH.Toolbox.activateEraser();
+            THOTH.setUserControl(false);
+        }
+        if (k === 'q'){
+            THOTH.Toolbox.activateLasso();
+            THOTH.setUserControl(false);
+        }
+        if (k === 'n'){
+            THOTH.Toolbox.deactivate();
+            THOTH.setUserControl(true);
+        }
+
+        // UI
+        if (k === '-') THOTH.FE.updateUIScale(THOTH.FE.uiScale - 1)
+        if (k === '=') THOTH.FE.updateUIScale(THOTH.FE.uiScale + 1)
+
+        // History
+        if (THOTH._cntrlDown && k === 'z') THOTH.HIS.undo();
+        if (THOTH._cntrlDown && k === 'y') THOTH.HIS.redo();
+    });
+
+    THOTH.on("KeyUp", (k) => {
+        // Environment
+        if (k==='l'){
+            ATON.FE.controlLight(false);
+
+            let D = ATON.getMainLightDirection();
+
+            let E = {};
+            E.environment = {};
+            E.environment.mainlight = {};
+            E.environment.mainlight.direction = [D.x,D.y,D.z];
+            E.environment.mainlight.shadows = ATON._renderer.shadowMap.enabled;
+
+            ATON.SceneHub.patch( E, ATON.SceneHub.MODE_ADD);
+            ATON.Photon.fire("AFE_AddSceneEdit", E);
+        }
+
+        // Nav
+        if (k === "Shift") {
+            THOTH._shiftDown = false;
+            if (THOTH.Toolbox.enabled) THOTH.setUserControl(false);
+            else THOTH.setUserControl(true);
+        }
+        if (k === "Control") {
+            THOTH._cntrlDown = false;
+            if (THOTH.Toolbox.enabled) THOTH.setUserControl(false);
+            else THOTH.setUserControl(true);
+        }
+    });
 };
 
 
