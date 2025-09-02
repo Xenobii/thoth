@@ -292,7 +292,6 @@ THOTH.updateNormalMap = (path, intensity = 10) => {
     THOTH.log("Normal map updated successfully!");
 };
 
-
 THOTH.updateTextureMap = (path) => {
     if (!path) return false;
 
@@ -336,13 +335,13 @@ THOTH.createLayer = (id) => {
     };
 
     let layer = {
-        id: id,
-        name: "New Layer",
-        description: " ",
-        selection: new Set(),
-        visible: true,
-        highlightColor: THOTH.Utils.getHighlightColor(id),
-        trash: false
+        id              : id,
+        name            : "New Layer",
+        description     : " ",
+        selection       : new Set(),
+        visible         : true,
+        highlightColor  : THOTH.Utils.getHighlightColor(id),
+        trash           : false
     };
     
     layers[id] = layer;
@@ -351,6 +350,28 @@ THOTH.createLayer = (id) => {
     THOTH.FE.addToLayers(id);
 
     THOTH.log("Created new layer: " + layer.name);
+};
+
+THOTH.createObjectDescriptor = () => {
+    // Global descriptor for the object/mesh
+
+    // Get all face indices for the given object
+    const geometry  = THOTH.mainMesh.geometry;
+    const indexAttr = geometry.index;
+    const faceCount = indexAttr ? indexAttr.count / 3 : positionAttr.count / 9;
+    const faceArray = Array.from({length: faceCount}, (_, i) => i);
+
+    const objectDescriptor = {
+        id              : -1,
+        name            : "Object Descriptor",
+        description     : " ",
+        selection       : faceArray,
+        visible         : true,
+        highlightColor  : null,
+        trash           : false
+    };
+
+    return objectDescriptor;
 };
 
 THOTH.deleteLayer = (id) => {
@@ -427,14 +448,3 @@ THOTH.syncScene = (layers) => {
 
     THOTH._bSynced = true;
 };
-
-
-// TODO: Remove all unnecessary ATON eventListeners on startup
-// TODO: Disable event listeners on popup/rename
-// TODO: Make layer descriptions field-based for CIDOC-CRM
-// TODO: Config history for rename/edit description
-// TODO: Commit history implementation
-// TODO: Resolve user versions
-// TODO: Comments
-// TODO: Show demo to Christina
-// TODO: Source image popup of pov

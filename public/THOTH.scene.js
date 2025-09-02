@@ -13,6 +13,7 @@ Scene.init = () => {
     Scene.sid = Scene.getSceneID();
 
     Scene.importLayers();
+    Scene.importObjectDescriptor();
     Scene.initEventListeners();
 };
 
@@ -128,20 +129,20 @@ Scene.getSceneID = (sid) => {
 
 // Import/export
 
-Scene.exportLayers = () => {
+Scene.exportChanges = () => {
     THOTH.log("Exporting annotations...");
 
     let A = {};
-    A.layers = Scene.currData.layers;
+    A.layers = structuredClone(Scene.currData.layers);
+    A.objectDescriptor = structuredClone(Scene.currData.objectDescriptor);
 
-    Object.values(Scene.currData.layers).forEach((layer) => {
+    Object.values(A.layers).forEach((layer) => {
         layer.selection = Array.from(layer.selection);
     });
-    
-    // Just remove all annotation objects and ADD them again with changes
-    THOTH.Scene.patch(A, THOTH.Scene.MODE_DEL, () => {
-    });
 
+    // Remove all annotation objects and ADD them again with changes
+    THOTH.Scene.patch(A, THOTH.Scene.MODE_DEL, () => {});
+    
     // Patch changes
     THOTH.Scene.patch(A, THOTH.Scene.MODE_ADD, () => {
         THOTH.log("Success!");
@@ -159,4 +160,12 @@ Scene.importLayers = () => {
 
         layer.selection = new Set(layer.selection);
     });
+};
+
+Scene.importObjectDescriptor = () => {
+    THOTH.log("Importing scene object descriptor");
+
+    if (Scene.currData.objectDescriptor === undefined) {
+        Scene.currData.objectDescriptor = THOTH.createObjectDescriptor();
+    }
 };

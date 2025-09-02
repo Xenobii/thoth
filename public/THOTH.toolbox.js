@@ -529,13 +529,13 @@ Toolbox._endLassoSub = () => {
 Toolbox._processLassoSelection = () => {
     if (!Toolbox.lassoPoints || Toolbox.lassoPoints.length < 3) return;
 
-    const mesh     = THOTH.mainMesh;
-    const geometry = THOTH.mainMesh.geometry;
-    const camera   = THOTH._camera;
-    const width    = Toolbox.canvas.width;
-    const height   = Toolbox.canvas.height;
-    const lassoPts = Toolbox.lassoPoints;
-    const dpr      = window.devicePixelRatio || 1;
+    const mesh      = THOTH.mainMesh;
+    const geometry  = THOTH.mainMesh.geometry;
+    const camera    = THOTH._camera;
+    const width     = Toolbox.canvas.width;
+    const height    = Toolbox.canvas.height;
+    const lassoPts  = Toolbox.lassoPoints;
+    const dpr       = window.devicePixelRatio || 1;
 
     const posAttr   = geometry.attributes.position;
     const normAttr  = geometry.attributes.normal;

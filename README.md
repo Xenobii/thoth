@@ -55,7 +55,16 @@ Once you have finished with the annotations, you can export them as a structured
 TBI
 
 ## TODO List
-- [x] Debug collaborative
-- [x] Implement history management
-- [ ] UI overhaul
-- [ ] Lasso hyper-optimization
+*For now*
+- [ ] Resolve ATON shortcuts and eventListeners
+- [ ] Change eraser behaviour
+- [ ] Resolve history for rename/edit description
+- [ ] Add per-user comments on annotations
+- [ ] Enable object-wise annotations
+- [ ] Allow for CIDOC-CRM compatible annotations via field-based input
+- [ ] General debugging
+- [ ] UI Overhaul
+
+*Once we deploy it to TEXTaiLES*
+- [ ] Resolve user versions and allow version merging
+- [ ] Enable source image viewer

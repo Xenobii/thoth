@@ -24,51 +24,51 @@ FE.init = () => {
 FE.setupUI =() => {
     // Create new containers
     const topRightContainer = document.createElement('div');
-    topRightContainer.id = 'guicanvasTR';
-    topRightContainer.style.position = 'absolute';
-    topRightContainer.style.top = '0px';          
-    topRightContainer.style.right = '0px';   
-    topRightContainer.style.zIndex = '120';
+    topRightContainer.id                = 'guicanvasTR';
+    topRightContainer.style.position    = 'absolute';
+    topRightContainer.style.top         = '0px';          
+    topRightContainer.style.right       = '0px';   
+    topRightContainer.style.zIndex      = '120';
     document.body.appendChild(topRightContainer);
 
     const lowerLeftContainer = document.createElement('div');
-    lowerLeftContainer.id = 'guicanvasLL';
-    lowerLeftContainer.style.position = 'absolute';
-    lowerLeftContainer.style.top = '60px';          
-    lowerLeftContainer.style.left = '0px';   
-    lowerLeftContainer.style.zIndex = '120';
+    lowerLeftContainer.id               = 'guicanvasLL';
+    lowerLeftContainer.style.position   = 'absolute';
+    lowerLeftContainer.style.top        = '60px';          
+    lowerLeftContainer.style.left       = '0px';   
+    lowerLeftContainer.style.zIndex     = '120';
     document.body.appendChild(lowerLeftContainer);
 
     const topLeftContainer = document.createElement('div');
-    topLeftContainer.id = 'guicanvasTL';
-    topLeftContainer.style.position = 'absolute';
-    topLeftContainer.style.top = '0px';          
-    topLeftContainer.style.left = '0px';   
-    topLeftContainer.style.zIndex = '120';
+    topLeftContainer.id                 = 'guicanvasTL';
+    topLeftContainer.style.position     = 'absolute';
+    topLeftContainer.style.top          = '0px';          
+    topLeftContainer.style.left         = '0px';   
+    topLeftContainer.style.zIndex       = '120';
     document.body.appendChild(topLeftContainer);
 
     const bottomRightContainer = document.createElement('div');
-    bottomRightContainer.id = 'guicanvasBR';
+    bottomRightContainer.id             = 'guicanvasBR';
     bottomRightContainer.style.position = 'absolute';
-    bottomRightContainer.style.bottom = '50px';          
-    bottomRightContainer.style.right = '0px';   
-    bottomRightContainer.style.zIndex = '120';
+    bottomRightContainer.style.bottom   = '50px';          
+    bottomRightContainer.style.right    = '0px';   
+    bottomRightContainer.style.zIndex   = '120';
     document.body.appendChild(bottomRightContainer);
 
     const bottomLeftContainer = document.createElement('div');
-    bottomLeftContainer.id = 'guicanvasBL';
-    bottomLeftContainer.style.position = 'absolute';
-    bottomLeftContainer.style.bottom = '50px';          
-    bottomLeftContainer.style.left = '0px';   
-    bottomLeftContainer.style.zIndex = '120';
+    bottomLeftContainer.id              = 'guicanvasBL';
+    bottomLeftContainer.style.position  = 'absolute';
+    bottomLeftContainer.style.bottom    = '50px';          
+    bottomLeftContainer.style.left      = '0px';   
+    bottomLeftContainer.style.zIndex    = '120';
     document.body.appendChild(bottomLeftContainer);
 
     const popupContainer = document.createElement('div');
-    popupContainer.id = 'popupcanvas';
-    popupContainer.style.position = 'absolute';
-    popupContainer.style.top = '150px';
-    popupContainer.style.left = '250px';
-    popupContainer.style.zIndex = '121';
+    popupContainer.id                   = 'popupcanvas';
+    popupContainer.style.position       = 'absolute';
+    popupContainer.style.top            = '150px';
+    popupContainer.style.left           = '250px';
+    popupContainer.style.zIndex         = '121';
     document.body.appendChild(popupContainer);
     FE.popupContainer = popupContainer;
 
@@ -432,14 +432,15 @@ FE.displayDetails = () => {
         FE.popupConfirmDelete(activeLayer.id);
     });
     editDescriptionBtn.on('click', () => {
-        PopUpEditDescription(activeLayer.id, [
-    { key: "author",      label: "author",      placeholder: "Enter author" },
-    { key: "title",       label: "title",       placeholder: "Enter title" },
-    { key: "description", label: "description", placeholder: "Short description" },
-    { key: "previewImage", label: "image",      placeholder: "Paste image URL", type: "image" }
-    
-  ]);
-    })
+        PopUpEditDescription(activeLayer.id, 
+            [
+                { key: "author",      label: "author",      placeholder: "Enter author" },
+                { key: "title",       label: "title",       placeholder: "Enter title" },
+                { key: "description", label: "description", placeholder: "Short description" },
+                { key: "previewImage", label: "image",      placeholder: "Paste image URL", type: "image" }
+            ]
+        );
+    });
 };
 
 
@@ -451,7 +452,7 @@ FE.setupExportPane = () => {
     });
 
     exportAnnotationBtn.on('click', () => {
-        THOTH.Scene.exportLayers();
+        THOTH.Scene.exportChanges();
     });
 };
 
