@@ -1,0 +1,24 @@
+**Implementation Notes**
+
+- Metadata will be split into 3 categories:
+    - Documentation
+    - Analysis
+    - Conservation
+- We'll use the fields provided by the CH partnres and Christina as a template. Fields will include:
+    - Provenance
+    - Location
+    - Date/period
+    - type of object (excavational, archaeiological ...)
+    - materials (cotton, linen ...)
+    - type of weave 
+    - weave count (per cm2)
+    - thread diameter (in mm, um)
+    - twist direction
+    - twist angle
+    - ply (bool) -> type of ply
+    - decorations (bool) -> types of decorations -> more parameters
+    - metal threads (bool) -> --//--
+- Other than the pov images, allow display of other images that are assigned to the same object. Categorize them in classes based on analysis, retrieve them from the database.
+- It will be one object (scene) for all users.
+- Add the ability to download the object along with other related resources (metadata, source images ...).
+- Investigate whether we can swap between objects based on the digitization techinque.

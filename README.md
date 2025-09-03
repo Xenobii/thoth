@@ -61,11 +61,12 @@ TBI
 - [ ] Add per-user comments on annotations
 - [x] Enable object-wise annotations
 - [ ] General debugging
+- [ ] Create basic image viewer
+- [ ] Resolve version history per user
 
 *Front-end*
 - [ ] UI Overhaul
 - [ ] Allow for CIDOC-CRM compatible annotations via field-based input
 
 *Once we deploy it to TEXTaiLES*
-- [ ] Resolve user versions and allow version merging
 - [ ] Enable source image viewer
