@@ -98,7 +98,7 @@ FE.setupUI =() => {
     FE.detailsPane = new Pane({
         container: bottomRightContainer,
         title: 'Layer details',
-        expanded: true,
+        expanded: false,
     });
 
     FE.exportPane = new Pane({
@@ -367,13 +367,8 @@ FE.addToLayers = (id) => {
         FE.displayDetails();
     });
 
-    // Enable rename from extension
-    //enableButtonRename(layerBtn, layer, 'name');
-
     // Call global extension function
-    if (typeof window.enableButtonRename === "function") {
-        window.enableButtonRename(layerBtn, layer, "name");
-    }
+    window.enableButtonRename(id, "name");
 
     FE.updateUIScale();
 

@@ -198,6 +198,8 @@ THOTH.initEventListeners = () => {
     THOTH.discardAtonEventHandler("KeyUp");
 
     THOTH.on("KeyPress", (k) => {
+        if (!THOTH._bListenKeyboardEvents) return;
+
         // Settings
         if (k === ' ' || k === 'Space') HATHOR.popupSettings();
 
@@ -269,6 +271,8 @@ THOTH.initEventListeners = () => {
     });
 
     THOTH.on("KeyUp", (k) => {
+        if (THOTH._bListenKeyboardEvents) return;
+        
         // Environment
         if (k==='l'){
             ATON.FE.controlLight(false);
@@ -533,7 +537,8 @@ THOTH.resurrectLayer = (id) => {
 THOTH.editLayer = (id, attr, value) => {
     if (id === undefined || attr === undefined) return;
     
-    const layer = THOTH.Scene.currData.layers?.[id];
+    const layer         = THOTH.Scene.currData.layers?.[id];
+    const layerButton   = THOTH.FE.layerButtons.get(id);
     if (!layer) return;
 
     if (value === undefined) value = layer[attr];
@@ -542,6 +547,7 @@ THOTH.editLayer = (id, attr, value) => {
     layer[attr] = value;
 
     // Edit buttons accordingly (later)
+    if (attr === "name") layerButton.title = value;
 };
 
 

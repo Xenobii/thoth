@@ -71,16 +71,16 @@ HIS.undo = () => {
 
         case HIS.ACTIONS.RENAME_LAYER:
             inverseType = HIS.ACTIONS.RENAME_LAYER;
-            prevContent = THOTH.Scene.currData.layers[id].name;
+            prevContent = content;
             THOTH.fire("editLayer", {
                 id: id,
                 attr: "name",
-                value: content
+                value: content.oldTitle
             }); 
             THOTH.firePhoton("editLayer", {
                 id: id,
                 attr: "name",
-                value: content
+                value: content["oldTitle"]
             }); 
             break;
 
@@ -161,12 +161,12 @@ HIS.redo = () => {
             THOTH.fire("editLayer", {
                 id: id,
                 attr: "name",
-                value: content
+                value: content.newTitle
             }); 
             THOTH.firePhoton("editLayer", {
                 id: id,
                 attr: "name",
-                value: content
+                value: content.newTitle
             }); 
             break;
 

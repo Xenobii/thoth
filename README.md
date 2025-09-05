@@ -57,12 +57,13 @@ TBI
 ## TODO
 *Back-end*
 - [x] Resolve ATON shortcuts and eventListeners
-- [ ] Resolve history for rename/edit description
+- [x] Resolve history for rename/edit description
 - [ ] Add per-user comments on annotations
 - [x] Enable object-wise annotations
 - [ ] General debugging
 - [ ] Create basic image viewer
 - [ ] Resolve version history per user
+- [ ] Allow real-time data stream display
 
 *Front-end*
 - [ ] UI Overhaul
