@@ -382,3 +382,44 @@
         $("#btnCancel").click(() => FE.popupClose());
     };
 })();
+
+//Popup snippet for messages with timeout (showPopup("message");)
+function showPopup(message) {
+  // Remove existing popup if it exists
+  const existing = document.querySelector('.tp-popup');
+  if (existing) existing.remove();
+
+  // Create popup container
+  const popup = document.createElement('div');
+  popup.className = 'tp-popup';
+  popup.innerText = message;
+
+  // Style it (you can tweak these to fit Tweakpane’s look)
+  Object.assign(popup.style, {
+    position: 'fixed',
+    top: '20px',
+    right: '20px',
+    padding: '10px 15px',
+    background: '#333',
+    color: '#fff',
+    borderRadius: '8px',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+    fontSize: '14px',
+    zIndex: 9999,
+    opacity: 0,
+    transition: 'opacity 0.3s',
+  });
+
+  document.body.appendChild(popup);
+
+  // Fade in
+  requestAnimationFrame(() => {
+    popup.style.opacity = 1;
+  });
+
+  // Auto remove after 2.5s
+  setTimeout(() => {
+    popup.style.opacity = 0;
+    setTimeout(() => popup.remove(), 300);
+  }, 2500);
+}

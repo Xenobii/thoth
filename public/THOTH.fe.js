@@ -156,7 +156,7 @@ FE.updateUIScale = (k) => {
     FE.applyPaneStyling(FE.uiScale, FE.layerManagementPane, 80);
     FE.applyPaneStyling(FE.uiScale, FE.layerPane, 80);
     FE.applyPaneStyling(FE.uiScale, FE.detailsPane, 90);
-    FE.applyPaneStyling(FE.uiScale, FE.exportPane, 90);
+    FE.applyPaneStyling(FE.uiScale, FE.exportPane, 140);
 };
 
 
@@ -443,15 +443,120 @@ FE.displayDetails = () => {
 
 // Export
 
+// globals
+FE.selectedExportLayerIds = FE.selectedExportLayerIds || new Set(); // multi-select store
+FE.layerSelectedPane     = null;            // snapshot folder in Export pane
+FE.exportPickerButtons    = new Map();       // id -> { btn, baseName }
+
+// main setup
 FE.setupExportPane = () => {
-    const exportAnnotationBtn = FE.exportPane.addButton({
-        title: "Export Current Annotation",
+  // 1) Export button
+  const exportAnnotationBtn = FE.exportPane.addButton({
+    title: "Export Current Annotation",
+  });
+
+  exportAnnotationBtn.on('click', () => {
+    const ids = [...FE.selectedExportLayerIds]; //to unpack the contents
+    if (ids.length > 0) {
+      // Export selected layers (multi)
+      THOTH.Scene.exportChanges();//[0,1,2]
+      return;
+    }
+
+    // If nothing selected write popup message
+    showPopup("No layers selected. Please select at least one layer to export.");
+
+  });
+
+  // 2) Snapshot multi-select button
+  const selectAnnotationsBtn = FE.exportPane.addButton({
+    title: "Select Annotation(s)",
+  });
+
+  selectAnnotationsBtn.on('click', () => {
+    FE.showLayerPickerInExportPane(); // builds a fresh snapshot list
+  });
+};
+
+// --- helpers ---
+FE.showLayerPickerInExportPane = () => {
+  // remove previous snapshot list (if any)
+  if (FE.layerSelectedPane) {
+    try { FE.exportPane.remove(FE.layerSelectedPane); } catch (_) {}
+    FE.layerSelectedPane = null;
+    FE.exportPickerButtons.clear();
+  }
+
+  // read layers snapshot
+  const layers = THOTH.Scene?.currData?.layers || {};
+  const visibleLayers = Object.values(layers).filter(l => l && !l.trash); //the layers that remain visible if a layer is deleted
+
+  // create folder that lists current layers (or empty state)
+  FE.layerSelectedPane = FE.exportPane.addFolder({
+    title: visibleLayers.length ? "Layer Selection" : "Select Annotation (no layers found)",
+    expanded: true,
+  });
+
+  // apply scroll only to this pane
+  enablePaneScroll(FE.exportPane, 150);
+
+  if (visibleLayers.length === 0) return;
+
+  // quick actions (Select All / Clear / Refresh)
+  const actionsRow = FE.layerSelectedPane.addButton({ title: "Select All" });
+  const clearRow   = FE.layerSelectedPane.addButton({ title: "Clear All" });
+  const refreshBtn = FE.layerSelectedPane.addButton({ title: "↻ Refresh list" });
+
+  actionsRow.on('click', () => {
+    visibleLayers.forEach(l => FE._setLayerSelection(l.id, true));
+    
+  });
+
+  clearRow.on('click', () => {
+    visibleLayers.forEach(l => FE._setLayerSelection(l.id, false));
+    
+  });
+
+  refreshBtn.on('click', FE.showLayerPickerInExportPane);
+
+  // one checkbox per layer (multi-select)
+  visibleLayers.forEach((layer) => {
+    const state = { selected: FE.selectedExportLayerIds.has(layer.id) }; //object creation (for binding -> visible checkbox)
+    const binding = FE.layerSelectedPane.addBinding(state, 'selected', {
+      label: layer.name,
+    }); // as long as state is boolean it creates checkbox
+
+    binding.on('change', (ev) => {
+      if (ev.value) {
+        FE.selectedExportLayerIds.add(layer.id);
+      } else {
+        FE.selectedExportLayerIds.delete(layer.id);
+      }
+
+      // set active layer to the last toggled layer
+      THOTH.activeLayer = layer;
+      FE.displayDetails?.();
+
     });
 
-    exportAnnotationBtn.on('click', () => {
-        THOTH.Scene.exportChanges();
-    });
+    // keep a reference if you need to update labels later
+    FE.exportPickerButtons.set(layer.id, { api: binding, state});
+  });
 };
+
+FE._setLayerSelection = (id, on) => {
+  if (on) FE.selectedExportLayerIds.add(id);
+  else    FE.selectedExportLayerIds.delete(id);
+
+  // update the button's label immediately if it exists
+  const entry = FE.exportPickerButtons.get(id);
+  if (!entry) return;
+  // programmatically tick/untick the checkbox
+  entry.state.selected = on;
+  entry.api.refresh(); // force UI to reflect state.selected
+
+};
+
 
 // History
 
